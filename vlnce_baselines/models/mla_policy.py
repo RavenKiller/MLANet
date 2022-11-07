@@ -282,22 +282,53 @@ class MLANet(Net):
             self.peak_loss_lambda = self.model_config.PEAK_ATTENTION.alpha
 
     def _peak_loss(self, score, mask=None):
-        mu = (
-            torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
-        )
-        sigma = (
-            torch.tensor(
-                [self.peak_loss_sigma], dtype=torch.float, device=score.device
+        curve = self.model_config.PEAK_ATTENTION.curve
+        if curve=="gaussian":
+            mu = (
+                torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
             )
-            .unsqueeze(1)
-            .repeat(score.shape)
-        )
-        x = torch.ones_like(score).cumsum(dim=1) - 1
-        x = -((x - mu) ** 2) / (2 * sigma ** 2)
-        x = torch.exp(x)
-        if mask is not None:
-            x[mask] = 0
-        e = x / (1e-10 + x.sum(dim=1, keepdim=True))
+            sigma = (
+                torch.tensor(
+                    [self.peak_loss_sigma], dtype=torch.float, device=score.device
+                )
+                .unsqueeze(1)
+                .repeat(score.shape)
+            )
+            x = torch.ones_like(score).cumsum(dim=1) - 1
+            x = -((x - mu) ** 2) / (2 * sigma ** 2)
+            x = torch.exp(x)
+            if mask is not None:
+                x[mask] = 0
+            e = x / (1e-10 + x.sum(dim=1, keepdim=True))
+        elif curve=="linear":
+            maxpoint = torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
+            x = torch.ones_like(score).cumsum(dim=1) - 1
+            if mask is not None:
+                x[mask] = 0
+            lens = torch.argmax(x, dim=1).unsqueeze(1)
+            y = torch.max(x, lens-x)
+            x = y-(torch.abs(maxpoint-x))
+            e = x / (1e-10 + x.sum(dim=1, keepdim=True))
+        elif curve=="quadratic":
+            maxpoint = torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
+            x = torch.ones_like(score).cumsum(dim=1) - 1
+            if mask is not None:
+                x[mask] = 0
+            lens = torch.argmax(x, dim=1).unsqueeze(1)
+            y = torch.max(x, lens-x)
+            x = y-(torch.abs(maxpoint-x))
+            x = x**2
+            e = x / (1e-10 + x.sum(dim=1, keepdim=True))
+        elif curve=="cubic":
+            maxpoint = torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
+            x = torch.ones_like(score).cumsum(dim=1) - 1
+            if mask is not None:
+                x[mask] = 0
+            lens = torch.argmax(x, dim=1).unsqueeze(1)
+            y = torch.max(x, lens-x)
+            x = y-(torch.abs(maxpoint-x))
+            x = x**3
+            e = x / (1e-10 + x.sum(dim=1, keepdim=True))
         loss = F.mse_loss(score, e, reduction="none").sum(dim=1)
         # if torch.rand(1)>self.peak_loss_lambda:
         if torch.rand(1) > self.peak_loss_threshold:

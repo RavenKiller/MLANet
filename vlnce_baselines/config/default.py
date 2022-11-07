@@ -288,6 +288,7 @@ _C.MODEL.PROGRESS_MONITOR.use = False
 _C.MODEL.PROGRESS_MONITOR.alpha = 1.0  # loss multiplier \theta
 _C.MODEL.PEAK_ATTENTION = CN()
 _C.MODEL.PEAK_ATTENTION.use = False
+_C.MODEL.PEAK_ATTENTION.curve = "gaussian" # gaussian, linear, quadratic, cubic
 _C.MODEL.PEAK_ATTENTION.alpha = 1.0  # loss multiplier \lambda
 _C.MODEL.PEAK_ATTENTION.sigma = 0.6  # sigma
 _C.MODEL.PEAK_ATTENTION.type = 0  # the order of polynomial; 0,1,2,3 mean constant, linear, quadratic or cubic
