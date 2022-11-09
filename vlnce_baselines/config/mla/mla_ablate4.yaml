@@ -3,10 +3,10 @@ TRAINER_NAME: dagger # dagger, or recollect_trainer
 SIMULATOR_GPU_IDS: [0]
 TORCH_GPU_ID: 0
 NUM_ENVIRONMENTS: 6
-TENSORBOARD_DIR: data/tensorboard_dirs/mla_ablate_curve_constant
-CHECKPOINT_FOLDER: data/checkpoints/mla_ablate_curve_constant
-EVAL_CKPT_PATH_DIR: data/checkpoints/mla_ablate_curve_constant
-RESULTS_DIR: data/checkpoints/mla_ablate_curve_constant/evals
+TENSORBOARD_DIR: data/tensorboard_dirs/mla_ablate_curve_cubic
+CHECKPOINT_FOLDER: data/checkpoints/mla_ablate_curve_cubic
+EVAL_CKPT_PATH_DIR: data/checkpoints/mla_ablate_curve_cubic
+RESULTS_DIR: data/checkpoints/mla_ablate_curve_cubic/evals
 
 EVAL:
   USE_CKPT_CONFIG: False
@@ -27,7 +27,7 @@ IL:
     iterations: 1
     update_size: 10819
     p: 1.0
-    preload_lmdb_features: False
+    preload_lmdb_features: True
     lmdb_features_dir: data/trajectories_dirs/mla_nrsub/trajectories.lmdb
 
 MODEL:
@@ -47,7 +47,7 @@ MODEL:
     sigma: 0.6
     steps: 97371
     threshold: 0.6
-    curve: constant
+    curve: cubic
   MLA:
     feature_drop: 0.25
   CLIP:

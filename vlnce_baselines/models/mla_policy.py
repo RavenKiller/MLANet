@@ -300,6 +300,11 @@ class MLANet(Net):
             if mask is not None:
                 x[mask] = 0
             e = x / (1e-10 + x.sum(dim=1, keepdim=True))
+        elif curve=="constant":
+            x = torch.ones_like(score)
+            if mask is not None:
+                x[mask] = 0
+            e = x / (1e-10 + x.sum(dim=1, keepdim=True))
         elif curve=="linear":
             maxpoint = torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
             x = torch.ones_like(score).cumsum(dim=1) - 1
