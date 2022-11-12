@@ -150,7 +150,7 @@ class MLANet(Net):
         )
         # Vision attend instruction
         self.heads = model_config.MLA.heads
-        _hidden_size = model_config.STATE_ENCODER.hidden_size
+        _hidden_size = model_config.MLA.hidden_size
         self.low_level_attention = nn.MultiheadAttention(
             _hidden_size,
             self.heads,

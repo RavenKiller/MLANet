@@ -19,13 +19,12 @@ if not os.path.exists("data/plots"):
 
 # model_names = ["mla_aug3","mla_aug_back","mla_aug2"]
 model_names = [
-    "mla_aug_da_tune2",
-    "mla_aug_da_tune3",
-    "mla_aug_da_tune4",
+    "mla_ablate_curve_linear",
+    "mla_ablate_curve_constant",
 ]
 checkpoint_path = os.path.join("data", "checkpoints")
 eval_folder = "evals"
-s = "unseen"
+s = "seen"
 val_set = "val_%s" % (s)
 summary_file = "summary_%s_base.json" % (s)
 summary = {}
