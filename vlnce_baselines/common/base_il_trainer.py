@@ -422,15 +422,16 @@ class BaseVLNCETrainer(BaseILTrainer):
                         )
                         plt.savefig(
                             "debug/ep%d_success%d_len%d.jpg"
-                            % (int(ep_id), int(infos[i]["success"]), l)
+                            % (int(ep_id), int(infos[i]["success"]), l),
+                            dpi=50
                         )
                     except BaseException:
                         pass
-                    with open("action_save_single.pkl", "wb") as f:
+                    with open(f"action_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
                         pickle.dump(action_final, f)
-                    if len(stats_episodes) % 1000 == 0:
-                        with open("score_save_single.pkl", "wb") as f:
-                            pickle.dump(score_final, f)
+                    # if len(stats_episodes) % 100 == 0:
+                    with open(f"score_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
+                        pickle.dump(score_final, f)
                 if config.use_pbar:
                     pbar.update()
                 else:
@@ -507,7 +508,7 @@ class BaseVLNCETrainer(BaseILTrainer):
             logger.info(f"{k}: {v:.6f}")
             writer.add_scalar(f"eval_{split}_{k}", v, checkpoint_num)
         if config.DEBUG:
-            with open("score_save_single.pkl", "wb") as f:
+            with open(f"score_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
                 pickle.dump(score_final, f)
 
     def inference(self) -> None:
