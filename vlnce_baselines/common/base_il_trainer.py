@@ -155,7 +155,7 @@ class BaseVLNCETrainer(BaseILTrainer):
         recurrent_hidden_states = torch.zeros(
             N,
             self.policy.net.num_recurrent_layers,
-            self.config.MODEL.STATE_ENCODER.hidden_size,
+            self.policy.net.hidden_size,
             device=self.device,
         )
 
@@ -310,7 +310,7 @@ class BaseVLNCETrainer(BaseILTrainer):
         rnn_states = torch.zeros(
             envs.num_envs,
             self.policy.net.num_recurrent_layers,
-            config.MODEL.STATE_ENCODER.hidden_size,
+            self.policy.net.hidden_size,
             device=self.device,
         )
         prev_actions = torch.zeros(
@@ -567,7 +567,7 @@ class BaseVLNCETrainer(BaseILTrainer):
         rnn_states = torch.zeros(
             envs.num_envs,
             self.policy.net.num_recurrent_layers,
-            config.MODEL.STATE_ENCODER.hidden_size,
+            self.policy.net.hidden_size,
             device=self.device,
         )
         prev_actions = torch.zeros(

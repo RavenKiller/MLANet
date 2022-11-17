@@ -283,6 +283,7 @@ _C.MODEL.STATE_ENCODER.num_layers_action = 1
 _C.MODEL.MLA = CN()
 _C.MODEL.MLA.heads = 8
 _C.MODEL.MLA.feature_drop = 0.0
+_C.MODEL.MLA.hidden_size = 512
 
 _C.MODEL.PROGRESS_MONITOR = CN()
 _C.MODEL.PROGRESS_MONITOR.use = False

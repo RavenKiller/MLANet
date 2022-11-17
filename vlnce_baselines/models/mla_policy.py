@@ -132,9 +132,12 @@ class MLANet(Net):
         if self.model_config.SEQ2SEQ.encoder_prev_action:
             rnn_input_size += self.prev_action_embedding.embedding_dim
         dropout_ratio_rnn = 0
+        state_encoder_hidden_size = model_config.STATE_ENCODER.hidden_size
+        if state_encoder_hidden_size!=model_config.MLA.hidden_size:
+            state_encoder_hidden_size = model_config.MLA.hidden_size
         self.low_state_encoder = build_rnn_state_encoder(
             input_size=rnn_input_size,
-            hidden_size=model_config.STATE_ENCODER.hidden_size,
+            hidden_size=state_encoder_hidden_size,
             rnn_type=model_config.STATE_ENCODER.rnn_type_low,
             num_layers=model_config.STATE_ENCODER.num_layers_low,
             dropout=dropout_ratio_rnn,
@@ -143,14 +146,14 @@ class MLANet(Net):
         # Init the vision RNN state encoder to attend high level instrucitons
         self.high_state_encoder = build_rnn_state_encoder(
             input_size=rnn_input_size,
-            hidden_size=model_config.STATE_ENCODER.hidden_size,
+            hidden_size=state_encoder_hidden_size,
             rnn_type=model_config.STATE_ENCODER.rnn_type_high,
             num_layers=model_config.STATE_ENCODER.num_layers_high,
             dropout=dropout_ratio_rnn,
         )
         # Vision attend instruction
         self.heads = model_config.MLA.heads
-        _hidden_size = model_config.STATE_ENCODER.hidden_size
+        _hidden_size = model_config.MLA.hidden_size
         self.low_level_attention = nn.MultiheadAttention(
             _hidden_size,
             self.heads,
@@ -191,8 +194,8 @@ class MLANet(Net):
 
         # Init the action decoder RNN
         self.all_feature_size = (
-            model_config.STATE_ENCODER.hidden_size
-            + model_config.STATE_ENCODER.hidden_size
+            state_encoder_hidden_size
+            + state_encoder_hidden_size
             + self.f_i_size
             + self.f_v_size
         )
@@ -207,21 +210,21 @@ class MLANet(Net):
         )
         self.action_decoder = build_rnn_state_encoder(
             input_size=model_config.STATE_ENCODER.hidden_size,
-            hidden_size=model_config.STATE_ENCODER.hidden_size,
+            hidden_size=state_encoder_hidden_size,
             rnn_type=model_config.STATE_ENCODER.rnn_type_action,
             num_layers=model_config.STATE_ENCODER.num_layers_action,
             dropout=dropout_ratio_rnn,
         )
-        self._output_size = model_config.STATE_ENCODER.hidden_size
+        self._output_size = state_encoder_hidden_size
 
-        self._hidden_size = model_config.STATE_ENCODER.hidden_size
+        self._hidden_size = state_encoder_hidden_size
         self.register_buffer(
             "_scale", torch.tensor(1.0 / ((self._hidden_size // 2) ** 0.5))
         )
 
         # Init the progress monitor
         self.progress_monitor = nn.Linear(
-            model_config.STATE_ENCODER.hidden_size, 1
+            state_encoder_hidden_size, 1
         )
         if self.model_config.PROGRESS_MONITOR.use:
             nn.init.kaiming_normal_(
