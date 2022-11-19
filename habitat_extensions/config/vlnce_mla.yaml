@@ -49,3 +49,4 @@ DATASET:
   SPLIT: train
   DATA_PATH: data/datasets/R2R_VLNCE_NRSub/{split}/{split}_sub.json.gz
   SCENES_DIR: data/scene_datasets/
+SEED: 1024

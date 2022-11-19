@@ -28,7 +28,7 @@ IL:
     update_size: 5000
     p: 0.75
     preload_lmdb_features: False
-    lmdb_features_dir: /hy-nas/data/trajectories_dirs/mla_da/trajectories.lmdb
+    lmdb_features_dir: data/trajectories_dirs/mla_da/trajectories.lmdb
 
 MODEL:
   policy_name: MLAPolicy

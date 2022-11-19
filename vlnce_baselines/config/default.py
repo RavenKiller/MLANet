@@ -23,6 +23,7 @@ _C.SIMULATOR_GPU_IDS = [0]
 _C.VIDEO_OPTION = []  # options: "disk", "tensorboard"
 _C.VIDEO_DIR = "data/videos/debug"
 _C.DEBUG = False
+_C.DEBUG_SUFFIX = "save"
 _C.TENSORBOARD_DIR = "data/tensorboard_dirs/debug"
 _C.RESULTS_DIR = "data/checkpoints/pretrained/evals"
 
@@ -282,12 +283,14 @@ _C.MODEL.STATE_ENCODER.num_layers_action = 1
 _C.MODEL.MLA = CN()
 _C.MODEL.MLA.heads = 8
 _C.MODEL.MLA.feature_drop = 0.0
+_C.MODEL.MLA.hidden_size = 512
 
 _C.MODEL.PROGRESS_MONITOR = CN()
 _C.MODEL.PROGRESS_MONITOR.use = False
 _C.MODEL.PROGRESS_MONITOR.alpha = 1.0  # loss multiplier \theta
 _C.MODEL.PEAK_ATTENTION = CN()
 _C.MODEL.PEAK_ATTENTION.use = False
+_C.MODEL.PEAK_ATTENTION.curve = "gaussian" # gaussian, constant, linear, quadratic, cubic
 _C.MODEL.PEAK_ATTENTION.alpha = 1.0  # loss multiplier \lambda
 _C.MODEL.PEAK_ATTENTION.sigma = 0.6  # sigma
 _C.MODEL.PEAK_ATTENTION.type = 0  # the order of polynomial; 0,1,2,3 mean constant, linear, quadratic or cubic
