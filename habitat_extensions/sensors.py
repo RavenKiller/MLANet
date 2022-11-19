@@ -197,14 +197,56 @@ class RxRInstructionSensor(Sensor):
         return feats
 
 
+@registry.register_sensor(name="InstructionSensor")
+class InstructionSensor(Sensor):
+    def __init__(self, **kwargs):
+        self.uuid = "instruction"
+        self.observation_space = spaces.Box(
+            low=0,
+            high=65535,
+            shape=(
+                100,
+            ),
+            dtype=np.int64,
+        )
+
+    def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
+        return self.uuid
+    def _get_observation_space(self, *args: Any, **kwargs: Any) -> spaces.Box:
+        return self.observation_space
+
+    def _get_observation(
+        self,
+        observations: Dict[str, Observations],
+        episode: VLNEpisode,
+        **kwargs
+    ):
+        return {
+            "text": episode.instruction.instruction_text,
+            "tokens": episode.instruction.instruction_tokens,
+            "trajectory_id": episode.trajectory_id,
+        }
+
+    def get_observation(self, **kwargs):
+        return self._get_observation(**kwargs)
+
 @registry.register_sensor(name="SubInstructionSensor")
 class SubInstructionSensor(Sensor):
     def __init__(self, **kwargs):
         self.uuid = "sub_instruction"
-        self.observation_space = spaces.Discrete(0)
-
+        self.observation_space = spaces.Box(
+            low=0,
+            high=65535,
+            shape=(
+                10,
+                77,
+            ),
+            dtype=np.int64,
+        )
     def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
         return self.uuid
+    def _get_observation_space(self, *args: Any, **kwargs: Any) -> spaces.Box:
+        return self.observation_space
 
     def _get_observation(
         self,

@@ -31,6 +31,53 @@ class VLNCEDaggerEnv(habitat.RLEnv):
     def get_info(self, observations: Observations) -> Dict[Any, Any]:
         return self.habitat_env.get_metrics()
 
+@baseline_registry.register_env(name="VLNCERLEnv")
+class VLNCERLEnv(habitat.RLEnv):
+    def __init__(self, config: Config, dataset: Optional[Dataset] = None):
+        self._rl_config = config.RL
+        self._reward_measure_name = self._rl_config.REWARD_MEASURE
+        self._reward_measuer_ratio = self._rl_config.MEASURE_RATIO
+        self._success_measure_name = self._rl_config.SUCCESS_MEASURE
+        self._previous_measure = None
+        self._previous_action = None
+
+        super().__init__(config.TASK_CONFIG, dataset)
+    def reset(self):
+        self._previous_action = None
+        observations = super().reset()
+        self._previous_measure = self._env.get_metrics()[
+            self._reward_measure_name
+        ]
+        return observations
+    def step(self, *args, **kwargs):
+        self._previous_action = kwargs["action"]
+        return super().step(*args, **kwargs)
+    def get_reward_range(self) -> Tuple[float, float]:
+        return (
+            self._rl_config.SLACK_REWARD - 1.0,
+            self._rl_config.SUCCESS_REWARD + 1.0,
+        )
+    def get_reward(self, observations: Observations) -> float:
+        reward = self._rl_config.SLACK_REWARD
+
+        current_measure = self._env.get_metrics()[self._reward_measure_name]
+
+        reward += (self._previous_measure - current_measure)*self._reward_measuer_ratio
+        self._previous_measure = current_measure
+
+        if self._episode_success():
+            reward += self._rl_config.SUCCESS_REWARD
+
+        return reward
+    def _episode_success(self):
+        return self._env.get_metrics()[self._success_measure_name]
+
+    def get_done(self, observations: Observations) -> bool:
+        return self._env.episode_over
+
+    def get_info(self, observations: Observations) -> Dict[Any, Any]:
+        return self.habitat_env.get_metrics()
+
 
 @baseline_registry.register_env(name="VLNCEInferenceEnv")
 class VLNCEInferenceEnv(habitat.RLEnv):
