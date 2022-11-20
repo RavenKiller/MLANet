@@ -74,8 +74,8 @@ from vlnce_baselines.common.utils import extract_instruction_tokens
 from habitat_baselines.utils.env_utils import construct_envs
 
 
-@baseline_registry.register_trainer(name="vlnceppo")
-class VLNCEPPOTrainer(BaseRLTrainer):
+@baseline_registry.register_trainer(name="vlnceppov21")
+class VLNCEPPOTrainerv21(BaseRLTrainer):
     r"""Trainer class for PPO algorithm
     Paper: https://arxiv.org/abs/1707.06347.
     """

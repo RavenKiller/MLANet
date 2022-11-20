@@ -78,7 +78,7 @@ from habitat_baselines.utils.env_utils import construct_envs
 
 
 @baseline_registry.register_trainer(name="vlnceppov17")
-class VLNCEPPOTrainerv17(BaseRLTrainer):
+class VLNCEPPOV17Trainerv17(BaseRLTrainer):
     r"""Trainer class for PPO algorithm
     Paper: https://arxiv.org/abs/1707.06347.
     """
