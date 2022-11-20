@@ -78,7 +78,7 @@ from habitat_baselines.utils.env_utils import construct_envs
 
 
 @baseline_registry.register_trainer(name="vlnceppov17")
-class VLNCEPPOV17Trainerv17(BaseRLTrainer):
+class VLNCEPPOTrainerv17(BaseRLTrainer):
     r"""Trainer class for PPO algorithm
     Paper: https://arxiv.org/abs/1707.06347.
     """
@@ -785,6 +785,10 @@ class VLNCEPPOV17Trainerv17(BaseRLTrainer):
             self._last_checkpoint_percent = requeue_stats[
                 "_last_checkpoint_percent"
             ]
+            self.running_episode_stats = requeue_stats["running_episode_stats"]
+            self.window_episode_stats.update(
+                requeue_stats["window_episode_stats"]
+            )
 
         ppo_cfg = self.config.RL.PPO
         print(self.config)
@@ -813,6 +817,8 @@ class VLNCEPPOV17Trainerv17(BaseRLTrainer):
                         num_updates_done=self.num_updates_done,
                         _last_checkpoint_percent=self._last_checkpoint_percent,
                         prev_time=(time.time() - self.t_start) + prev_time,
+                        running_episode_stats=self.running_episode_stats,
+                        window_episode_stats=dict(self.window_episode_stats),
                     )
                     save_interrupted_state(
                         dict(
@@ -824,7 +830,6 @@ class VLNCEPPOV17Trainerv17(BaseRLTrainer):
                         )
                     )
 
-                requeue_job()
 
                 if EXIT.is_set():
                     profiling_wrapper.range_pop()  # train update
