@@ -127,6 +127,21 @@ _C.RL.SUCCESS_MEASURE = "success"
 _C.RL.NUM_UPDATES = 200000
 _C.RL.LOG_INTERVAL = 10
 _C.RL.CHECKPOINT_INTERVAL = 250
+_C.RL.SUCCESS_REWARD = 2.5
+_C.RL.SLACK_REWARD = -0.01
+# -----------------------------------------------------------------------------
+# preemption CONFIG
+# -----------------------------------------------------------------------------
+_C.RL.preemption = CN()
+# Append the slurm job ID to the resume state filename if running a slurm job
+# This is useful when you want to have things from a different job but same
+# same checkpoint dir not resume.
+_C.RL.preemption.append_slurm_job_id = False
+# Number of gradient updates between saving the resume state
+_C.RL.preemption.save_resume_state_interval = 100
+# Save resume states only when running with slurm
+# This is nice if you don't want debug jobs to resume
+_C.RL.preemption.save_state_batch_only = False
 # ----------------------------------------------------------------------------
 # POLICY CONFIG
 # ----------------------------------------------------------------------------

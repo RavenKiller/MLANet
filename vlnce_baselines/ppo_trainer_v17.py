@@ -120,7 +120,20 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
     @obs_space.setter
     def obs_space(self, new_obs_space):
         self._obs_space = new_obs_space
-
+    def _should_save_resume_state(self) -> bool:
+        return (
+            (
+                not self.config.RL.preemption.save_state_batch_only
+                or is_slurm_batch_job()
+            )
+            and (
+                (
+                    int(self.num_updates_done + 1)
+                    % self.config.RL.preemption.save_resume_state_interval
+                )
+                == 0
+            )
+        )
     def _all_reduce(self, t: torch.Tensor) -> torch.Tensor:
         r"""All reduce helper method that moves things to the correct
         device and only runs if distributed
@@ -763,7 +776,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
             lr_lambda=lambda x: 1 - self.percent_done(),
         )
 
-        interrupted_state = load_interrupted_state()
+        interrupted_state = load_interrupted_state(filename=os.path.join(self.config.CHECKPOINT_FOLDER, ".resume_state.pth"))
         if interrupted_state is not None:
             self.agent.load_state_dict(interrupted_state["state_dict"])
             self.agent.optimizer.load_state_dict(
@@ -808,7 +821,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                     self.agent.clip_param = ppo_cfg.clip_param * (
                         1 - self.percent_done()
                     )
-                if REQUEUE.is_set() and rank0_only():
+                if self._should_save_resume_state() and rank0_only():
                     requeue_stats = dict(
                         env_time=self.env_time,
                         pth_time=self.pth_time,
@@ -827,7 +840,8 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                             lr_sched_state=lr_scheduler.state_dict(),
                             config=self.config,
                             requeue_stats=requeue_stats,
-                        )
+                        ),
+                        filename=os.path.join(self.config.CHECKPOINT_FOLDER, ".resume_state.pth")
                     )
 
 
