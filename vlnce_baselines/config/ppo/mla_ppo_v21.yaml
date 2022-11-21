@@ -14,7 +14,7 @@ TEST_EPISODE_COUNT: -1
 TENSORBOARD_DIR: data/tensorboard_dirs/mla_ppo21
 CHECKPOINT_FOLDER: data/checkpoints/mla_ppo21
 EVAL_CKPT_PATH_DIR: data/checkpoints/mla_ppo21
-RESULTS_DIR: data/checkpoints/mla_ppo21
+RESULTS_DIR: data/checkpoints/mla_ppo21/evals
 
 EVAL:
   USE_CKPT_CONFIG: False
