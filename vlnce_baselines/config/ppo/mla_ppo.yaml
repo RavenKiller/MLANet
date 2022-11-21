@@ -58,7 +58,7 @@ MODEL:
   INSTRUCTION_ENCODER:
     bidirectional: True
   MLA:
-    feature_drop: 0.0
+    feature_drop: 0.25
   DEPTH_ENCODER:
     trainable: False
   CLIP:

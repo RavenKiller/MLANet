@@ -5,7 +5,7 @@ ENV_NAME: VLNCERLEnv
 DEBUG: True
 SIMULATOR_GPU_ID: 0 # new version
 TORCH_GPU_ID: 0
-NUM_ENVIRONMENTS: 1
+NUM_ENVIRONMENTS: 4
 NUM_UPDATES: 100000
 NUM_CHECKPOINTS: 20
 # VIDEO_OPTION: ["disk"]
@@ -26,7 +26,7 @@ RL:
   SUCCESS_REWARD: 8.0
   MEASURE_RATIO: 0.1
   REWARD_MEASURE: distance_to_goal
-  SUCCESS_MEASURE: success
+  SUCCESS_MEASURE: spl
   load_net: True
   net_to_load: data/checkpoints/mla_aug_da_tune/ckpt.MLAPolicy.26.pth # REPLACE
 
@@ -58,7 +58,7 @@ MODEL:
   INSTRUCTION_ENCODER:
     bidirectional: True
   MLA:
-    feature_drop: 0.0
+    feature_drop: 0.25
   DEPTH_ENCODER:
     trainable: False
   CLIP:

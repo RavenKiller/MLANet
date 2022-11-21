@@ -131,7 +131,7 @@ class MLANet(Net):
         rnn_input_size += model_config.DEPTH_ENCODER.feature_size
         if self.model_config.SEQ2SEQ.encoder_prev_action:
             rnn_input_size += self.prev_action_embedding.embedding_dim
-        dropout_ratio_rnn = 0
+        dropout_ratio_rnn = dropout_ratio / 2
         state_encoder_hidden_size = model_config.STATE_ENCODER.hidden_size
         if state_encoder_hidden_size!=model_config.MLA.hidden_size:
             state_encoder_hidden_size = model_config.MLA.hidden_size
