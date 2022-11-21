@@ -346,6 +346,7 @@ class BaseVLNCETrainer(BaseILTrainer):
         )
         start_time = time.time()
         if config.DEBUG:
+            os.makedirs("debug_%s"%(config.DEBUG_SUFFIX),exist_ok=True)
             score_final = {}
             score_now = [[]] * config.NUM_ENVIRONMENTS
             action_final = {}
@@ -368,7 +369,7 @@ class BaseVLNCETrainer(BaseILTrainer):
                 )
                 prev_actions.copy_(actions)
             if config.DEBUG:
-                for i in range(config.NUM_ENVIRONMENTS):
+                for i in range(len(self.sub_score)):
                     score_now[i].append(self.sub_score[i].unsqueeze(0))
                     action_now[i].append(actions[i].cpu())
 
@@ -429,8 +430,8 @@ class BaseVLNCETrainer(BaseILTrainer):
                             cbar=False,
                         )
                         plt.savefig(
-                            "debug/ep%d_success%d_len%d.jpg"
-                            % (int(ep_id), int(infos[i]["success"]), l),
+                            "debug_%s/ep%d_success%d_len%d.jpg"
+                            % (config.DEBUG_SUFFIX,int(ep_id), int(infos[i]["success"]), l),
                             dpi=50
                         )
                     except BaseException:

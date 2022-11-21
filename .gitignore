@@ -149,7 +149,7 @@ sbatch_scripts
 
 start_*.sh
 
-debug
+debug*
 
 server_*.sh
 

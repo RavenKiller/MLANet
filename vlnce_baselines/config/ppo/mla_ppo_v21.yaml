@@ -28,7 +28,7 @@ RL:
   REWARD_MEASURE: distance_to_goal
   SUCCESS_MEASURE: spl
   load_net: True
-  net_to_load: data/checkpoints/mla_aug_da_tune/ckpt.MLAPolicy.26.pth # REPLACE
+  net_to_load: data/checkpoints/mla_aug_back2/ckpt.MLAPolicy.25.pth # REPLACE
 
   POLICY:
     name: MLAPPOPolicy
