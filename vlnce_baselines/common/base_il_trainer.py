@@ -436,6 +436,7 @@ class BaseVLNCETrainer(BaseILTrainer):
                         )
                     except BaseException:
                         pass
+                    plt.close()
                     with open(f"action_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
                         pickle.dump(action_final, f)
                     # if len(stats_episodes) % 100 == 0:

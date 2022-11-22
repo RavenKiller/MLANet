@@ -47,13 +47,18 @@ def observations_to_image(
     if "rgb" in observation:
         observation_size = observation["rgb"].shape[0]
         rgb = observation["rgb"][:, :, :3]
+        if not isinstance(rgb, np.ndarray):
+            rgb = rgb.cpu().numpy()
         egocentric_view.append(rgb)
 
     # draw depth map if observation has depth info. resize to rgb size.
     if "depth" in observation:
         if observation_size == -1:
             observation_size = observation["depth"].shape[0]
-        depth_map = (observation["depth"].squeeze() * 255).astype(np.uint8)
+        depth_map = observation["depth"].squeeze() * 255
+        if not isinstance(depth_map, np.ndarray):
+            depth_map = depth_map.cpu().numpy()
+        depth_map = depth_map.astype(np.uint8)
         depth_map = np.stack([depth_map for _ in range(3)], axis=2)
         depth_map = cv2.resize(
             depth_map,

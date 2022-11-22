@@ -21,7 +21,8 @@ from torch.optim.lr_scheduler import LambdaLR
 
 from habitat import Config, VectorEnv, logger
 from habitat.utils import profiling_wrapper
-from habitat.utils.visualizations.utils import observations_to_image
+# from habitat.utils.visualizations.utils import observations_to_image
+from habitat_extensions.utils import observations_to_image
 from habitat_baselines.common.base_trainer import BaseRLTrainer
 from habitat_baselines.common.baseline_registry import baseline_registry
 from habitat_baselines.common.environments import get_env_class
@@ -73,6 +74,9 @@ from habitat_baselines.utils.common import (
 from vlnce_baselines.common.utils import extract_instruction_tokens
 from habitat_baselines.utils.env_utils import construct_envs
 
+import pickle
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 @baseline_registry.register_trainer(name="vlnceppov21")
 class VLNCEPPOTrainerv21(BaseRLTrainer):
@@ -906,6 +910,8 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
             self.envs.close()
 
+    def _score_hook(self, m, i, o):
+        self.sub_score = o[1][:, 0, :].cpu()
     def _eval_checkpoint(
         self,
         checkpoint_path: str,
@@ -1048,6 +1054,16 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
         pbar = tqdm.tqdm(total=number_of_eval_episodes)
         self.actor_critic.eval()
+        if config.DEBUG:
+            os.makedirs("debug_%s"%(config.DEBUG_SUFFIX),exist_ok=True)
+            score_final = {}
+            score_now = [None] * config.NUM_ENVIRONMENTS
+            action_final = {}
+            action_now = [None] * config.NUM_ENVIRONMENTS
+            self.actor_critic.net.high_level_attention.register_forward_hook(
+                self._score_hook
+            )
+            heatmap = []
         while (
             len(stats_episodes) < number_of_eval_episodes
             and self.envs.num_envs > 0
@@ -1069,6 +1085,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                 )
 
                 prev_actions.copy_(actions)  # type: ignore
+
             # NB: Move actions to CPU.  If CUDA tensors are
             # sent in to env.step(), that will create CUDA contexts
             # in the subprocesses.
@@ -1136,6 +1153,44 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                         )
                     ] = episode_stats
 
+                    ep_id = current_episodes[i].episode_id
+                    if config.DEBUG:
+                        # try:
+                        heatmap = score_now[i]
+                        pad = torch.zeros((1,), dtype=torch.float)
+                        l = torch.argmin(torch.cat((heatmap[0][0], pad)))
+                        assert l > 0, "Value error"
+                        heatmap = torch.cat(heatmap)[:, :l]
+                        score_final[ep_id] = {
+                            "score": heatmap.numpy(),
+                            "infos": infos[i],
+                        }
+                        score_now[i] = None
+                        action_final[ep_id] = torch.cat(action_now[i]).numpy()
+                        action_now[i] = None
+                        plt.figure()
+                        sns.heatmap(
+                            heatmap.numpy(),
+                            annot=False,
+                            fmt=".2f",
+                            cmap="YlOrRd",
+                            linewidths=0,
+                            cbar=False,
+                        )
+                        plt.savefig(
+                            "debug_%s/ep%d_success%d_len%d.jpg"
+                            % (config.DEBUG_SUFFIX,int(ep_id), int(infos[i]["success"]), l),
+                            dpi=50
+                        )
+                        # except BaseException:
+                        #     pass
+                        plt.close()
+                        with open(f"action_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
+                            pickle.dump(action_final, f)
+                        # if len(stats_episodes) % 100 == 0:
+                        with open(f"score_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
+                            pickle.dump(score_final, f)
+
                     if len(self.config.VIDEO_OPTION) > 0:
                         generate_video(
                             video_option=self.config.VIDEO_OPTION,
@@ -1145,17 +1200,27 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                             checkpoint_idx=checkpoint_index,
                             metrics=self._extract_scalars_from_info(infos[i]),
                             tb_writer=writer,
+                            fps=5,
                         )
 
                         rgb_frames[i] = []
 
                 # episode continues
-                elif len(self.config.VIDEO_OPTION) > 0:
-                    # TODO move normalization / channel changing out of the policy and undo it here
-                    frame = observations_to_image(
-                        {k: v[i] for k, v in batch.items()}, infos[i]
-                    )
-                    rgb_frames[i].append(frame)
+                else:
+                    if config.DEBUG:
+                        # for i in range(len(self.sub_score)):
+                        if score_now[i]:
+                            score_now[i].append(self.sub_score[i].unsqueeze(0))
+                            action_now[i].append(actions[i].cpu())
+                        else:
+                            score_now[i] = [self.sub_score[i].unsqueeze(0)]
+                            action_now[i] = [actions[i].cpu()]
+                    if len(self.config.VIDEO_OPTION) > 0:
+                        # TODO move normalization / channel changing out of the policy and undo it here
+                        frame = observations_to_image(
+                            {k: v[i] for k, v in batch.items()}, infos[i]
+                        )
+                        rgb_frames[i].append(frame)
 
             not_done_masks = not_done_masks.to(device=self.device)
             (
