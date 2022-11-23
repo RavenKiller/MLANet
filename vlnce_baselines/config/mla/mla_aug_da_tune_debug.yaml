@@ -2,13 +2,15 @@ BASE_TASK_CONFIG_PATH: habitat_extensions/config/vlnce_mla.yaml
 TRAINER_NAME: dagger # dagger, or recollect_trainer
 SIMULATOR_GPU_IDS: [0]
 TORCH_GPU_ID: 0
-DEBUG: True
+DEBUG: False
 DEBUG_SUFFIX: "val_seen"
-NUM_ENVIRONMENTS: 4
+VIDEO_OPTION: ["disk"]
+VIDEO_DIR: data/videos/debugtmp
+NUM_ENVIRONMENTS: 3
 TENSORBOARD_DIR: data/tensorboard_dirs/mla_aug_da_tune
 CHECKPOINT_FOLDER: data/checkpoints/mla_aug_da_tune
 EVAL_CKPT_PATH_DIR: data/checkpoints/mla_aug_da_tune/ckpt.MLAPolicy.26.pth
-RESULTS_DIR: data/checkpoints/mla_aug_da_tune/evals
+RESULTS_DIR: data/checkpoints/mla_aug_da_tune/evals111
 
 EVAL:
   USE_CKPT_CONFIG: False
