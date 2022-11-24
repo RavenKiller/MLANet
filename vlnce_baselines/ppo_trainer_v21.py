@@ -11,6 +11,7 @@ import time
 from collections import defaultdict, deque
 from typing import Any, Dict, List, Optional
 import json
+import jsonlines
 
 import numpy as np
 import torch
@@ -1466,7 +1467,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                                 video_dir=self.config.VIDEO_DIR,
                                 images=rgb_frames[i],
                                 episode_id=current_episodes[i].episode_id,
-                                checkpoint_idx=checkpoint_index,
+                                checkpoint_idx=0,
                                 metrics=self._extract_scalars_from_info(infos[i]),
                                 tb_writer=writer,
                             )
