@@ -53,7 +53,7 @@ _C.INFERENCE.PREDICTIONS_FILE = "predictions.json"
 _C.INFERENCE.INFERENCE_NONLEARNING = False
 _C.INFERENCE.NONLEARNING = CN()
 _C.INFERENCE.NONLEARNING.AGENT = "RandomAgent"
-_C.INFERENCE.FORMAT = "rxr"  # either 'rxr' or 'r2r'
+_C.INFERENCE.FORMAT = "r2r"  # either 'rxr' or 'r2r'
 
 # ----------------------------------------------------------------------------
 # IMITATION LEARNING CONFIG
