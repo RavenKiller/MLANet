@@ -161,7 +161,7 @@ scripts/tmp
 *.out
 *.csv
 
-predictions.json
+predictions*.json
 
 eval_*.sh
 tmp.sh

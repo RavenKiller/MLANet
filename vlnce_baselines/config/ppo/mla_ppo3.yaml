@@ -1,37 +1,35 @@
 BASE_TASK_CONFIG_PATH: habitat_extensions/config/vlnce_mla.yaml
 TRAINER_NAME: vlnceppov21
-ENV_NAME: VLNCERLEnv
 # SIMULATOR_GPU_IDS: [5]
-DEBUG: False
 SIMULATOR_GPU_ID: 0 # new version
 TORCH_GPU_ID: 0
-NUM_ENVIRONMENTS: 4
+NUM_ENVIRONMENTS: 2
 NUM_UPDATES: 100000
 NUM_CHECKPOINTS: 20
 # VIDEO_OPTION: ["disk"]
 # VIDEO_DIR: data/videos/debugtmp
 TEST_EPISODE_COUNT: -1
-TENSORBOARD_DIR: data/tensorboard_dirs/mla_ppo21
-CHECKPOINT_FOLDER: data/checkpoints/mla_ppo21
-EVAL_CKPT_PATH_DIR: data/checkpoints/mla_ppo21
-RESULTS_DIR: data/checkpoints/mla_ppo21/evals
+TENSORBOARD_DIR: data/tensorboard_dirs/mla_ppo33
+CHECKPOINT_FOLDER: data/checkpoints/mla_ppo33
+EVAL_CKPT_PATH_DIR: data/checkpoints/mla_ppo33
+RESULTS_DIR: data/checkpoints/mla_ppo33/evals
 
 EVAL:
   USE_CKPT_CONFIG: False
-  SPLIT: val_unseen
+  SPLIT: val_seen
   EPISODE_COUNT: -1
 INFERENCE:
-  SPLIT: val_unseen
-  CKPT_PATH: data/checkpoints/best_ppo/ckpt.5.pth
-  PREDICTIONS_FILE: predictions_500_unseen.json
+  CKPT_PATH: data/checkpoints/mla_ppo3/ckpt.5.pth
+  FORMAT: r2r
+
 RL:
   SLACK_REWARD: -0.02
   SUCCESS_REWARD: 8.0
   MEASURE_RATIO: 0.1
   REWARD_MEASURE: distance_to_goal
-  SUCCESS_MEASURE: spl
-  load_net: False
-  net_to_load: data/checkpoints/mla_aug_back2/ckpt.MLAPolicy.25.pth # REPLACE
+  SUCCESS_MEASURE: success
+  load_net: True
+  net_to_load: data/checkpoints/mla_aug_back2/ckpt.MLAPolicy.28.pth # REPLACE
 
   POLICY:
     name: MLAPPOPolicy
@@ -61,7 +59,7 @@ MODEL:
   INSTRUCTION_ENCODER:
     bidirectional: True
   MLA:
-    feature_drop: 0.25
+    feature_drop: 0.0
   DEPTH_ENCODER:
     trainable: False
   CLIP:

@@ -11,15 +11,20 @@ NUM_CHECKPOINTS: 20
 # VIDEO_OPTION: ["disk"]
 # VIDEO_DIR: data/videos/debugtmp
 TEST_EPISODE_COUNT: -1
-TENSORBOARD_DIR: data/tensorboard_dirs/mla_ppo
-CHECKPOINT_FOLDER: data/checkpoints/mla_ppo
-EVAL_CKPT_PATH_DIR: data/checkpoints/mla_ppo
-RESULTS_DIR: data/checkpoints/mla_ppo/evals
+TENSORBOARD_DIR: data/tensorboard_dirs/mla_ppo21
+CHECKPOINT_FOLDER: data/checkpoints/mla_ppo21
+EVAL_CKPT_PATH_DIR: data/checkpoints/mla_ppo21
+RESULTS_DIR: data/checkpoints/mla_ppo21/evals
 
 EVAL:
   USE_CKPT_CONFIG: False
   SPLIT: val_seen
   EPISODE_COUNT: -1
+INFERENCE:
+  SPLIT: val_unseen
+  CKPT_PATH: data/checkpoints/best_ppo/ckpt.5.pth
+  PREDICTIONS_FILE: predictions_500_unseen.json
+  USE_CKPT_CONFIG: False
 
 RL:
   SLACK_REWARD: -0.02
