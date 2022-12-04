@@ -1,7 +1,6 @@
-# Multi-Level Attention with Sub-instruction for Continuous Vision-and-Language Navigation
+# MLANet: Multi-Level Attention Network with Sub-instruction for Continuous Vision-and-Language Navigation
 <!-- Official implrementations of *Multi-Level Attention with Sub-instruction for
 Continuous Vision-and-Language Navigation* ([paper]()) -->
-*This repository will be completed after being reviewed.*
 
 
 ## Setup
