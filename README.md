@@ -24,6 +24,7 @@ python -m pip install -r habitat_baselines/rl/ddppo/requirements.txt
 python setup.py develop --all
 ```
 *Habitat v0.2.1 is also supported now!*
+
 4. Clone this repository and install python requirements:
 ```bash
 git clone https://github.com/RavenKiller/MLA.git
