@@ -51,7 +51,7 @@ python run.py \
 ```
 `{config}` should be replaced by a config file path; `{type}` should be `train`, `eval` or `inference`, meaning train models, evaluate models and test models.
 
-Our config files is stored in `vlnce_baselines/config/mla`:
+Our config files is stored in `mlanet/config/mla`:
 | File | Meaning |
 | ---- | ---- |
 | `mla.yaml` | Train model |
@@ -61,8 +61,6 @@ Our config files is stored in `vlnce_baselines/config/mla`:
 | `mla_ppo.yaml` | Fine-tune model with PPO |
 | `mla_ablate.yaml` | Ablation study |
 | `eval_single.yaml` | Evaluate and visualize a single path |
-
-
 
 
 ## Performance
@@ -78,5 +76,3 @@ The best model on validation sets is trained with EnvDrop augmentation and then 
 <!-- \[[val](https://www.jianguoyun.com/p/DSOE7KcQhY--CRjUtMMEIAA )\] \[[test](https://www.jianguoyun.com/p/DSYqcBcQhY--CRiAkbkEIAA)\] -->
 \[[best model](https://www.jianguoyun.com/p/DSAuJqsQhY--CRjYrOwEIAA)\]
 
-## References
-+ [VLN-CE](https://github.com/jacobkrantz/VLN-CE).

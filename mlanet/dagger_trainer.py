@@ -335,7 +335,6 @@ class DaggerTrainer(BaseVLNCETrainer):
                             traj_obs[k] = v.numpy()
                             if self.config.IL.DAGGER.lmdb_fp16:
                                 traj_obs[k] = traj_obs[k].astype(np.float16)
-
                         transposed_ep = [
                             traj_obs,
                             np.array([step[1] for step in ep], dtype=np.int64),
@@ -406,7 +405,7 @@ class DaggerTrainer(BaseVLNCETrainer):
                 rgb_features = self.policy.net.get_rgb_features()
                 rgb_seq_features = self.policy.net.get_rgb_seq_features()
                 depth_features = self.policy.net.get_depth_features()
-                text_features = self.policy.net.get_text_features()
+                sub_features = self.policy.net.get_sub_features()
 
                 ## test part!!
                 # from PIL import Image
@@ -433,11 +432,11 @@ class DaggerTrainer(BaseVLNCETrainer):
                         del observations[i]["rgb"]
 
                     if depth_features is not None:
-                        observations[i]["depth_features"] = depth_features[i]
+                        observations[i]["depth_seq_features"] = depth_features[i]
                         del observations[i]["depth"]
 
-                    if text_features is not None:
-                        observations[i]["text_features"] = text_features[i]
+                    if sub_features is not None:
+                        observations[i]["sub_features"] = sub_features[i]
                         del observations[i]["sub_instruction"]
 
                     episodes[i].append(

@@ -10,14 +10,14 @@ from habitat_baselines.rl.ppo.policy import Net
 from torch import Tensor
 
 from vlnce_baselines.common.aux_losses import AuxLosses
-from vlnce_baselines.models.encoders import clip_encoders
-from vlnce_baselines.models.encoders.instruction_encoder import (
+from vlnce_baselines.models.policy import ILPolicy
+from mlanet.models.encoders import clip_encoders
+from mlanet.models.encoders.instruction_encoder import (
     InstructionEncoder,
 )
-from vlnce_baselines.models.encoders.rnn_state_encoder import (
+from mlanet.models.encoders.rnn_state_encoder import (
     build_rnn_state_encoder,
 )
-from vlnce_baselines.models.policy import ILPolicy
 
 
 @baseline_registry.register_policy
@@ -253,7 +253,7 @@ class MLANet(Net):
         self.rgb_features = None
         self.rgb_seq_features = None
         self.depth_features = None
-        self.text_features = None
+        self.sub_features = None
 
     @property
     def hidden_size(self) -> int:
@@ -352,8 +352,8 @@ class MLANet(Net):
     def get_depth_features(self):
         return self.depth_features
 
-    def get_text_features(self):
-        return self.text_features
+    def get_sub_features(self):
+        return self.sub_features
 
     def forward(
         self,
@@ -380,7 +380,7 @@ class MLANet(Net):
         if "rgb_features" not in observations:
             self.rgb_features = rgb_embedding
             self.rgb_seq_features = rgb_embedding_seq
-            self.text_features = sub_instruction_embedding
+            self.sub_features = sub_instruction_embedding
             self.depth_features = self.depth_encoder.get_depth_features()
         prev_actions = self.prev_action_embedding(
             ((prev_actions.float() + 1) * masks).long().view(-1)

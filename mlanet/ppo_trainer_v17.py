@@ -22,8 +22,7 @@ from torch.optim.lr_scheduler import LambdaLR
 
 from habitat import Config, VectorEnv, logger
 from habitat.utils import profiling_wrapper
-# from habitat.utils.visualizations.utils import observations_to_image
-from habitat_extensions.utils import observations_to_image
+from habitat.utils.visualizations.utils import observations_to_image
 from habitat_baselines.common.base_trainer import BaseRLTrainer
 from habitat_baselines.common.baseline_registry import baseline_registry
 from habitat_baselines.common.environments import get_env_class
@@ -50,38 +49,38 @@ try:
 except ModuleNotFoundError:
     from habitat_baselines.rl.ddppo.algo.ddp_utils import (
         EXIT,
+        REQUEUE,
         add_signal_handlers,
         get_distrib_size,
         init_distrib_slurm,
         is_slurm_batch_job,
-        load_resume_state,
+        load_interrupted_state,
         rank0_only,
         requeue_job,
-        save_resume_state,
+        save_interrupted_state,
     )
+    load_resume_state = load_interrupted_state
+    save_resume_state = save_interrupted_state
 
 # from habitat_baselines.rl.ddppo.policy import (  # noqa: F401.
 #     PointNavResNetPolicy,
 # )
 from habitat_baselines.rl.ppo import PPO
 # from habitat_baselines.rl.ppo.policy import Policy
-from vlnce_baselines.models.mla_ppo_policy import MLAPPOPolicy
+from mlanet.models.mla_ppo_policy import MLAPPOPolicy
 from habitat_baselines.utils.common import (
-    ObservationBatchingCache,
-    action_to_velocity_control,
-    batch_obs,
     generate_video,
+)
+from vlnce_baselines.common.utils import (
+    batch_obs,
 )
 from vlnce_baselines.common.utils import extract_instruction_tokens
 # from habitat_baselines.utils.env_utils import construct_envs
 from vlnce_baselines.common.env_utils import construct_envs
 
-import pickle
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-@baseline_registry.register_trainer(name="vlnceppov21")
-class VLNCEPPOTrainerv21(BaseRLTrainer):
+@baseline_registry.register_trainer(name="vlnceppov17")
+class VLNCEPPOTrainerv17(BaseRLTrainer):
     r"""Trainer class for PPO algorithm
     Paper: https://arxiv.org/abs/1707.06347.
     """
@@ -89,7 +88,6 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
     SHORT_ROLLOUT_THRESHOLD: float = 0.25
     _is_distributed: bool
-    _obs_batching_cache: ObservationBatchingCache
     envs: VectorEnv
     agent: PPO
     actor_critic: MLAPPOPolicy
@@ -108,7 +106,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
         # Distributed if the world size would be
         # greater than 1
         self._is_distributed = get_distrib_size()[2] > 1
-        self._obs_batching_cache = ObservationBatchingCache()
+        self._obs_batching_cache = None
 
         self.using_velocity_ctrl = (
             self.config.TASK_CONFIG.TASK.POSSIBLE_ACTIONS
@@ -124,7 +122,20 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
     @obs_space.setter
     def obs_space(self, new_obs_space):
         self._obs_space = new_obs_space
-
+    def _should_save_resume_state(self) -> bool:
+        return (
+            (
+                not self.config.RL.preemption.save_state_batch_only
+                or is_slurm_batch_job()
+            )
+            and (
+                (
+                    int(self.num_updates_done + 1)
+                    % self.config.RL.preemption.save_resume_state_interval
+                )
+                == 0
+            )
+        )
     def _all_reduce(self, t: torch.Tensor) -> torch.Tensor:
         r"""All reduce helper method that moves things to the correct
         device and only runs if distributed
@@ -221,7 +232,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
         )
 
     def _init_train(self):
-        resume_state = load_resume_state(self.config) # !! no resume
+        resume_state = load_resume_state() # !! no resume
         resume_state=None
         if resume_state is not None:
             # self.config: Config = resume_state["config"] !!
@@ -341,8 +352,8 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             ppo_cfg.hidden_size,
             num_recurrent_layers=self.actor_critic.net.num_recurrent_layers,
             is_double_buffered=ppo_cfg.use_double_buffered_sampler,
-            action_shape=action_shape,
-            discrete_actions=discrete_actions,
+            # action_shape=action_shape,
+            # discrete_actions=discrete_actions,
         )
         self.rollouts.to(self.device)
 
@@ -353,7 +364,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
         )
         batch = batch_obs(
-            observations, device=self.device, cache=self._obs_batching_cache
+            observations, device=self.device
         )
         batch = apply_obs_transforms_batch(batch, self.obs_transforms)
 
@@ -539,7 +550,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
         )
         batch = batch_obs(
-            observations, device=self.device, cache=self._obs_batching_cache
+            observations, device=self.device
         )
         batch = apply_obs_transforms_batch(batch, self.obs_transforms)
 
@@ -767,14 +778,15 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             lr_lambda=lambda x: 1 - self.percent_done(),
         )
 
-        resume_state = load_resume_state(self.config)
-        resume_state = None
-        if resume_state is not None:
-            self.agent.load_state_dict(resume_state["state_dict"])
-            self.agent.optimizer.load_state_dict(resume_state["optim_state"])
-            lr_scheduler.load_state_dict(resume_state["lr_sched_state"])
+        interrupted_state = load_interrupted_state(filename=os.path.join(self.config.CHECKPOINT_FOLDER, ".resume_state.pth"))
+        if interrupted_state is not None:
+            self.agent.load_state_dict(interrupted_state["state_dict"])
+            self.agent.optimizer.load_state_dict(
+                interrupted_state["optim_state"]
+            )
+            lr_scheduler.load_state_dict(interrupted_state["lr_sched_state"])
 
-            requeue_stats = resume_state["requeue_stats"]
+            requeue_stats = interrupted_state["requeue_stats"]
             self.env_time = requeue_stats["env_time"]
             self.pth_time = requeue_stats["pth_time"]
             self.num_steps_done = requeue_stats["num_steps_done"]
@@ -785,6 +797,9 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             count_checkpoints = requeue_stats["count_checkpoints"]
             prev_time = requeue_stats["prev_time"]
 
+            self._last_checkpoint_percent = requeue_stats[
+                "_last_checkpoint_percent"
+            ]
             self.running_episode_stats = requeue_stats["running_episode_stats"]
             self.window_episode_stats.update(
                 requeue_stats["window_episode_stats"]
@@ -808,8 +823,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                     self.agent.clip_param = ppo_cfg.clip_param * (
                         1 - self.percent_done()
                     )
-
-                if rank0_only() and self._should_save_resume_state():
+                if self._should_save_resume_state() and rank0_only():
                     requeue_stats = dict(
                         env_time=self.env_time,
                         pth_time=self.pth_time,
@@ -821,8 +835,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                         running_episode_stats=self.running_episode_stats,
                         window_episode_stats=dict(self.window_episode_stats),
                     )
-
-                    save_resume_state(
+                    save_interrupted_state(
                         dict(
                             state_dict=self.agent.state_dict(),
                             optim_state=self.agent.optimizer.state_dict(),
@@ -830,8 +843,9 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                             config=self.config,
                             requeue_stats=requeue_stats,
                         ),
-                        self.config,
+                        filename=os.path.join(self.config.CHECKPOINT_FOLDER, ".resume_state.pth")
                     )
+
 
                 if EXIT.is_set():
                     profiling_wrapper.range_pop()  # train update
@@ -912,8 +926,6 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
             self.envs.close()
 
-    def _score_hook(self, m, i, o):
-        self.sub_score = o[1][:, 0, :].cpu()
     def _eval_checkpoint(
         self,
         checkpoint_path: str,
@@ -1005,7 +1017,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
         )
         batch = batch_obs(
-            observations, device=self.device, cache=self._obs_batching_cache
+            observations, device=self.device
         )
         batch = apply_obs_transforms_batch(batch, self.obs_transforms)
 
@@ -1056,16 +1068,6 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
         pbar = tqdm.tqdm(total=number_of_eval_episodes)
         self.actor_critic.eval()
-        if config.DEBUG:
-            os.makedirs("debug_%s"%(config.DEBUG_SUFFIX),exist_ok=True)
-            score_final = {}
-            score_now = [None] * config.NUM_ENVIRONMENTS
-            action_final = {}
-            action_now = [None] * config.NUM_ENVIRONMENTS
-            self.actor_critic.net.high_level_attention.register_forward_hook(
-                self._score_hook
-            )
-            heatmap = []
         while (
             len(stats_episodes) < number_of_eval_episodes
             and self.envs.num_envs > 0
@@ -1087,7 +1089,6 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                 )
 
                 prev_actions.copy_(actions)  # type: ignore
-
             # NB: Move actions to CPU.  If CUDA tensors are
             # sent in to env.step(), that will create CUDA contexts
             # in the subprocesses.
@@ -1114,7 +1115,6 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             batch = batch_obs(
                 observations,
                 device=self.device,
-                cache=self._obs_batching_cache,
             )
             batch = apply_obs_transforms_batch(batch, self.obs_transforms)
 
@@ -1155,44 +1155,6 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                         )
                     ] = episode_stats
 
-                    ep_id = current_episodes[i].episode_id
-                    if config.DEBUG:
-                        # try:
-                        heatmap = score_now[i]
-                        pad = torch.zeros((1,), dtype=torch.float)
-                        l = torch.argmin(torch.cat((heatmap[0][0], pad)))
-                        assert l > 0, "Value error"
-                        heatmap = torch.cat(heatmap)[:, :l]
-                        score_final[ep_id] = {
-                            "score": heatmap.numpy(),
-                            "infos": infos[i],
-                        }
-                        score_now[i] = None
-                        action_final[ep_id] = torch.cat(action_now[i]).numpy()
-                        action_now[i] = None
-                        plt.figure()
-                        sns.heatmap(
-                            heatmap.numpy(),
-                            annot=False,
-                            fmt=".2f",
-                            cmap="YlOrRd",
-                            linewidths=0,
-                            cbar=False,
-                        )
-                        plt.savefig(
-                            "debug_%s/ep%d_success%d_len%d.jpg"
-                            % (config.DEBUG_SUFFIX,int(ep_id), int(infos[i]["success"]), l),
-                            dpi=50
-                        )
-                        # except BaseException:
-                        #     pass
-                        plt.close()
-                        with open(f"action_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
-                            pickle.dump(action_final, f)
-                        # if len(stats_episodes) % 100 == 0:
-                        with open(f"score_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
-                            pickle.dump(score_final, f)
-
                     if len(self.config.VIDEO_OPTION) > 0:
                         generate_video(
                             video_option=self.config.VIDEO_OPTION,
@@ -1202,27 +1164,17 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                             checkpoint_idx=checkpoint_index,
                             metrics=self._extract_scalars_from_info(infos[i]),
                             tb_writer=writer,
-                            fps=5,
                         )
 
                         rgb_frames[i] = []
 
                 # episode continues
-                else:
-                    if config.DEBUG:
-                        # for i in range(len(self.sub_score)):
-                        if score_now[i]:
-                            score_now[i].append(self.sub_score[i].unsqueeze(0))
-                            action_now[i].append(actions[i].cpu())
-                        else:
-                            score_now[i] = [self.sub_score[i].unsqueeze(0)]
-                            action_now[i] = [actions[i].cpu()]
-                    if len(self.config.VIDEO_OPTION) > 0:
-                        # TODO move normalization / channel changing out of the policy and undo it here
-                        frame = observations_to_image(
-                            {k: v[i] for k, v in batch.items()}, infos[i]
-                        )
-                        rgb_frames[i].append(frame)
+                elif len(self.config.VIDEO_OPTION) > 0:
+                    # TODO move normalization / channel changing out of the policy and undo it here
+                    frame = observations_to_image(
+                        {k: v[i] for k, v in batch.items()}, infos[i]
+                    )
+                    rgb_frames[i].append(frame)
 
             not_done_masks = not_done_masks.to(device=self.device)
             (
