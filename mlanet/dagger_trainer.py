@@ -432,7 +432,7 @@ class DaggerTrainer(BaseVLNCETrainer):
                         del observations[i]["rgb"]
 
                     if depth_features is not None:
-                        observations[i]["depth_seq_features"] = depth_features[i]
+                        observations[i]["depth_features"] = depth_features[i]
                         del observations[i]["depth"]
 
                     if sub_features is not None:

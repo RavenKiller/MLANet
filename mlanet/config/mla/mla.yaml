@@ -27,7 +27,7 @@ IL:
     iterations: 1
     update_size: 10819
     p: 1.0
-    preload_lmdb_features: False
+    preload_lmdb_features: True
     lmdb_features_dir: data/trajectories_dirs/mla_nrsub1/trajectories.lmdb
 
 MODEL:
