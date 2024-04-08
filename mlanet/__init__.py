@@ -8,6 +8,7 @@ else:
     from mlanet import (
         dagger_trainer,
         ppo_trainer_v21,
+        real_trainer,
     )
 
 from mlanet.models import (

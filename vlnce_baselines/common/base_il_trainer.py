@@ -89,7 +89,7 @@ class BaseVLNCETrainer(BaseILTrainer):
         if load_from_ckpt:
             ckpt_path = config.IL.ckpt_to_load
             ckpt_dict = self.load_checkpoint(ckpt_path, map_location="cpu")
-            self.policy.load_state_dict(ckpt_dict["state_dict"])
+            self.policy.load_state_dict({k.replace("actor_critic.",""):v for k,v in ckpt_dict["state_dict"].items() if k!="actor_critic.critic.fc.weight" and k!="actor_critic.critic.fc.bias"})
             if config.IL.is_requeue:
                 self.optimizer.load_state_dict(ckpt_dict["optim_state"])
                 self.start_epoch = ckpt_dict["epoch"] + 1
