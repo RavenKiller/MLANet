@@ -19,6 +19,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 import gzip
 import json
+from pathlib import Path
 from nltk.tokenize import word_tokenize
 
 import jsonlines
@@ -57,6 +58,7 @@ from vlnce_baselines.common.base_il_trainer import BaseVLNCETrainer
 from vlnce_baselines.common.env_utils import construct_envs
 from vlnce_baselines.common.utils import extract_instruction_tokens
 from vlnce_baselines.common.env_utils import construct_envs_auto_reset_false
+from vlnce_baselines.common.utils import Metrics
 
 # from copyreg import pickle
 
@@ -80,19 +82,21 @@ class EpisodeCls:
 
 
 class RealEnv:
-    def __init__(self, config, mode="eval", train_num=1, train_iter=1):
+    def __init__(self, config, mode="val", train_num=1, train_iter=1, extra_step=0):
         self.config = config
         self.ep_idx = -1
         self.step_id = 0
-        self.dataset_folder = "/root/autodl-tmp/data/vlntj-ce-clean"
+        self.dataset_folder = "/root/autodl-tmp/data/vlntj-ce-extend-{}".format(mode)
         self.episode_ids = [
             int(v) for v in os.listdir(self.dataset_folder) if v.isnumeric()
         ]
+        self.episode_ids = sorted(self.episode_ids)
         self.mode = mode
         if mode == "train":
             np.random.shuffle(self.episode_ids)
         self.train_num = train_num
         self.train_iter = train_iter
+        self.extra_step = extra_step
         self.current_iter = 0
         with gzip.open("/root/MLANet/data/datasets/R2R_VLNCE_NRSub/train/train.json.gz", "r") as f:
             train_data = json.loads(f.read())
@@ -202,23 +206,36 @@ class RealEnv:
     def step(self):
         self.step_id += 1
         ep_id = self.episode_ids[self.ep_idx]
-        if not os.path.exists(
+        if os.path.exists(
             os.path.join(
                 self.dataset_folder, str(ep_id), "rgb", "{}.png".format(self.step_id)
             )
-        ):  # next episode
-            obs = self.get_current_obs(self.step_id - 1)
-            mask = 0.0
-            done = True
-            info = {}
-        else:
+        ):
             obs = self.get_current_obs(self.step_id)
             mask = 0.0
             done = False
             info = {}
+        elif self.extra_step>0 and os.path.exists(
+            os.path.join(
+                self.dataset_folder, str(ep_id), "rgb", "{}.png".format(max(self.step_id-self.extra_step,0))
+            )
+        ):
+            tail_idx = max([int(v.replace(".png","")) for v in os.listdir(os.path.join(self.dataset_folder, str(ep_id), "rgb"))])
+            obs = self.get_current_obs(tail_idx)
+            mask = 0.0
+            done = False
+            info = {}
+        else:  # next episode
+            tail_idx = max([int(v.replace(".png","")) for v in os.listdir(os.path.join(self.dataset_folder, str(ep_id), "rgb"))])
+            obs = self.get_current_obs(tail_idx)
+            mask = 0.0
+            done = True
+            info = {}
         return [obs], [mask], [done], [info]
 
     def reset(self):
+        # if self.mode == "train":
+        #     np.random.shuffle(self.episode_ids)
         self.ep_idx += 1
         self.step_id = 0
         if self.mode == "train":
@@ -254,12 +271,36 @@ class RealEnv:
                     os.path.join(new_folder, str(ep_id), "action", "action.json"), "r"
                 ) as f:
                     gt = json.loads(f.read())
-                assert len(data) == len(gt)
+                assert len(data) == len(gt)+self.extra_step
                 os.makedirs(os.path.join(new_folder, str(ep_id), k), exist_ok=True)
                 with open(
                     os.path.join(new_folder, str(ep_id), k, k + ".json"), "w"
                 ) as f:
                     f.write(json.dumps(data))
+        n = len(self.episode_ids)
+        results = {
+            "sr":[0]*n,
+            "spl": [0]*n,
+            "apa": [0]*n,
+            "ndtw": [0]*n,
+        }
+        from pathlib import Path
+        new_folder = Path(new_folder)
+        for i in os.listdir(new_folder):
+            if i.isnumeric():
+                episode_folder = new_folder / i
+                with open(episode_folder/"action"/"action.json", "r") as f:
+                    gt_action = json.loads(f.read())
+                with open(episode_folder/"pred_action"/"pred_action.json", "r") as f:
+                    pred_action = json.loads(f.read())
+                i = int(i)
+                metrics = Metrics(pred_action, gt_action)
+                results["sr"][i] = metrics.calc_sr()
+                results["spl"][i] = metrics.calc_spl()
+                results["apa"][i] = metrics.calc_apa()
+                results["ndtw"][i] = metrics.calc_ndtw()
+                # metrics.plot_pos(new_folder, i, show=False)
+        return results
 
 
 def collate_fn(batch):
@@ -366,7 +407,7 @@ class RealTrainer(BaseVLNCETrainer):
         """
         checkpoint_index = 0
         config = self.config.clone()
-        checkpoint_path = "data/checkpoints/mla/mla_best_val_unseen.pth"
+        checkpoint_path = "/root/MLANet/data/checkpoints/mla/mla_best_ppo.pth"
         # if self.config.EVAL.USE_CKPT_CONFIG:
         #     ckpt = self.load_checkpoint(checkpoint_path, map_location="cpu")
         #     config = self._setup_eval_config(ckpt["config"])
@@ -412,22 +453,22 @@ class RealTrainer(BaseVLNCETrainer):
         )
         self.policy.train()
         self.policy.net.train()
-        # for param in self.policy.net.parameters():
-        #     param.requires_grad_(False)
-        # for m in [
-        #     # self.policy.net.final_input_compress,
-        #     # self.policy.net.action_decoder,
-        #     # self.policy.net.visual_post,
-        #     # self.policy.net.spatial_attention_depth,
-        #     # self.policy.net.spatial_attention_rgb,
-        #     # self.policy.net.inst_post,
-        #     # self.policy.net.high_level_attention,
-        #     # self.policy.net.low_level_attention,
-        #     self.policy.action_distribution,
-        # ]:
-        #     for name, param in m.named_parameters():
-        #         param.requires_grad_(True)
-        #         # print(name)
+        for param in self.policy.net.parameters():
+            param.requires_grad_(False)
+        for m in [
+            # self.policy.net.final_input_compress,
+            self.policy.net.action_decoder,
+            self.policy.net.visual_post,
+            self.policy.net.spatial_attention_depth,
+            self.policy.net.spatial_attention_rgb,
+            self.policy.net.inst_post,
+            self.policy.net.high_level_attention,
+            self.policy.net.low_level_attention,
+            self.policy.action_distribution,
+        ]:
+            for name, param in m.named_parameters():
+                param.requires_grad_(True)
+                # print(name)
 
         real_episode_predictions = defaultdict(list)
         real_observations = real_env.reset()
@@ -485,9 +526,6 @@ class RealTrainer(BaseVLNCETrainer):
             self.optimizer.step()
             self.optimizer.zero_grad()
 
-            self.save_checkpoint(
-                f"ckpt.{self.config.MODEL.policy_name}.real.trainum{real_env.train_num}.trainiter{real_env.train_iter}.pth"  # to continue train
-            )
 
             # if self.config.IL.use_iw:
             #     weights[weights>1.0] = self.config.IL.inflection_weight_coef
@@ -502,7 +540,7 @@ class RealTrainer(BaseVLNCETrainer):
                     real_not_done_masks,
                     deterministic=True,
                 )
-            real_prev_actions.copy_(gt_action)
+                real_prev_actions.copy_(real_actions)
 
             real_observations, _, real_dones, real_infos = real_env.step()
             real_not_done_masks = torch.tensor(
@@ -538,6 +576,9 @@ class RealTrainer(BaseVLNCETrainer):
             )
             real_batch = batch_obs(real_observations, self.device)
             real_batch = apply_obs_transforms_batch(real_batch, self.obs_transforms)
+        self.save_checkpoint(
+            f"ckpt.{self.config.MODEL.policy_name}.real.trainum{real_env.train_num}.trainiter{real_env.train_iter}.pth"  # to continue train
+        )
         envs.close()
         real_env.finish(real_episode_predictions)
         if config.use_pbar:
@@ -638,17 +679,8 @@ class RealTrainer(BaseVLNCETrainer):
 
         config.freeze()
 
-        if config.EVAL.SAVE_RESULTS:
-            fname = os.path.join(
-                config.RESULTS_DIR,
-                f"stats_ckpt_{checkpoint_index}_{split}.json",
-            )
-            # if os.path.exists(fname):
-            #     logger.info("skipping -- evaluation exists.")
-            #     return
-
         envs = construct_envs_auto_reset_false(config, get_env_class(config.ENV_NAME))
-        real_env = RealEnv(config, train_num=config.IL.REAL.train_num, train_iter=config.IL.REAL.train_iter)
+        real_env = RealEnv(config, train_num=config.IL.REAL.train_num, train_iter=config.IL.REAL.train_iter, extra_step=config.IL.REAL.extra_step)
 
         observation_space, action_space = self._get_spaces(config, envs=envs)
 
@@ -737,6 +769,15 @@ class RealTrainer(BaseVLNCETrainer):
             real_batch = apply_obs_transforms_batch(real_batch, self.obs_transforms)
 
         envs.close()
-        real_env.finish(real_episode_predictions)
+        results = real_env.finish(real_episode_predictions)
+        mean_results = {k:np.mean(v) for k,v in results.items()}
+        print(mean_results)
+        path_file = Path(checkpoint_path).name
+        fname = os.path.join(
+            config.RESULTS_DIR,
+            path_file.replace(".pth",".json"),
+        )
+        with open(fname, "w") as f:
+            f.write(json.dumps({"mean":mean_results, "all":results},indent=2))
         if config.use_pbar:
             pbar.close()

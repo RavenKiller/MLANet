@@ -13,15 +13,16 @@ RESULTS_DIR: data/checkpoints/mla_real/evals
 IL:
   epochs: 45
   batch_size: 2
-  lr: 5e-5
+  lr: 2.5e-5
   use_iw: True
-  inflection_weight_coef: 3.2
+  inflection_weight_coef: 1.6
   RECOLLECT_TRAINER:
     gt_file:
       data/datasets/R2R_VLNCE_NRSub/{split}/{split}_gt.json.gz
   REAL:
-    train_num: 7
-    train_iter: 50
+    train_num: 26
+    train_iter: 78
+    extra_step: 0
 
   DAGGER:
     iterations: 1
@@ -43,10 +44,10 @@ MODEL:
     type: 1 # can be 0,1,2,3, the order of ascending
     alpha: 0.4 # means lambda in paper
     sigma: 0.6
-    steps: 97371
+    steps: 2000
     threshold: 0.6
   MLA:
-    feature_drop: 0.25 # means FD in paper
+    feature_drop: 0.1 # means FD in paper
   CLIP:
     rgb_level: -2
   SEQ2SEQ:
