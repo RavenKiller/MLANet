@@ -12,6 +12,7 @@ from collections import defaultdict, deque
 from typing import Any, Dict, List, Optional
 import json
 import jsonlines
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -213,7 +214,6 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
         if config is None:
             config = self.config
         
-        tmp = get_env_class(config.ENV_NAME)
         self.envs = construct_envs(
             config,
             get_env_class(config.ENV_NAME),
@@ -695,16 +695,10 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             for k, v in deltas.items()
             if k not in {"reward", "count"}
         }
-        if len(metrics) > 0:
-            writer.add_scalars("metrics", metrics, self.num_steps_done)
-            # !! test writer
-            writer.add_scalars("metrics", {"a":1}, self.num_steps_done)
-
-        writer.add_scalars(
-            "losses",
-            losses,
-            self.num_steps_done,
-        )
+        for k,v in metrics.items():
+            writer.add_scalar("metrics/"+k,v,self.num_steps_done)
+        for k,v in losses.items():
+            writer.add_scalar("losses/"+k,v,self.num_steps_done)
 
         # log stats
         if self.num_updates_done % self.config.LOG_INTERVAL == 0:
@@ -795,7 +789,12 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
         with (
             TensorboardWriter(
-                self.config.TENSORBOARD_DIR, flush_secs=self.flush_secs
+                os.path.join(
+                    self.config.TENSORBOARD_DIR,
+                    self.config.MODEL.policy_name
+                    + "_"
+                    + datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                ), flush_secs=self.flush_secs
             )
             if rank0_only()
             else contextlib.suppress()
@@ -1259,15 +1258,12 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
         if "extra_state" in ckpt_dict and "step" in ckpt_dict["extra_state"]:
             step_id = ckpt_dict["extra_state"]["step"]
 
-        writer.add_scalars(
-            "eval_reward",
-            {"average reward": aggregated_stats["reward"]},
-            step_id,
-        )
+        for k,v in {"average reward": aggregated_stats["reward"]}.items():
+            writer.add_scalar(k,v,step_id)
 
         metrics = {k: v for k, v in aggregated_stats.items() if k != "reward"}
-        if len(metrics) > 0:
-            writer.add_scalars("eval_metrics", metrics, step_id)
+        for k,v in metrics.items():
+            writer.add_scalar(k,v,step_id)
         if config.EVAL.SAVE_RESULTS:
             with open(fname, "w") as f:
                 json.dump(aggregated_stats, f, indent=4)

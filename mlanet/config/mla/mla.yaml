@@ -6,7 +6,7 @@ NUM_ENVIRONMENTS: 4
 TENSORBOARD_DIR: data/tensorboard_dirs/mla
 CHECKPOINT_FOLDER: data/checkpoints/mla
 EVAL_CKPT_PATH_DIR: data/checkpoints/mla
-RESULTS_DIR: data/checkpoints/mla/evals
+RESULTS_DIR: data/checkpoints/mla/evals_v13
 
 EVAL:
   USE_CKPT_CONFIG: False
@@ -19,9 +19,6 @@ IL:
   lr: 2.5e-4
   use_iw: True
   inflection_weight_coef: 3.2
-  RECOLLECT_TRAINER:
-    gt_file:
-      data/datasets/R2R_VLNCE_NRSub/{split}/{split}_gt.json.gz
 
   DAGGER:
     iterations: 1

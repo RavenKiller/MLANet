@@ -49,6 +49,7 @@ from vlnce_baselines.models.encoders.instruction_encoder import (
 from vlnce_baselines.models.encoders.rnn_state_encoder import (
     build_rnn_state_encoder,
 )
+from mlanet.models.mla_policy import MLANet
 
 
 @baseline_registry.register_policy
@@ -65,12 +66,11 @@ class MLAPPOPolicy(Policy):
                 observation_space=observation_space,
                 model_config=model_config,
                 num_actions=action_space.n,
-                **kwargs,
             ),
             action_space.n,
         )
     def extra_load_net(self, config):
-        if config.RL.load_net:
+        if config.RL.load_net=="legacy":
             ckpt = torch.load(config.RL.net_to_load,map_location="cpu")["state_dict"]
             ckpt_new = self.net.state_dict()
             for k,v in ckpt.items():
@@ -84,6 +84,14 @@ class MLAPPOPolicy(Policy):
                     k = k.replace("action_distribution.", "")
                     ckpt_new[k] = v
             self.action_distribution.load_state_dict(ckpt_new)
+        elif config.RL.load_net=="ppo":
+            ckpt = torch.load(config.RL.net_to_load,map_location="cpu")["state_dict"]
+            ckpt_new = self.state_dict()
+            for k,v in ckpt.items():
+                k = k.replace("actor_critic.", "")
+                ckpt_new[k] = v
+            self.load_state_dict(ckpt_new)
+
     @classmethod
     def from_config(
         cls, config: Config, observation_space: spaces.Dict, action_space
@@ -92,14 +100,13 @@ class MLAPPOPolicy(Policy):
             observation_space=observation_space,
             action_space=action_space,
             model_config=config.MODEL,
-            config=config,
         )
         # p.extra_load_net(config)
         return p
 
 
 
-class MLANet(Net):
+class MLANetLegacy(Net):
     def __init__(
         self, observation_space: Space, model_config: Config, num_actions: int, config: Config
     ) -> None:

@@ -407,7 +407,7 @@ class RealTrainer(BaseVLNCETrainer):
         """
         checkpoint_index = 0
         config = self.config.clone()
-        checkpoint_path = "/root/MLANet/data/checkpoints/mla/mla_best_ppo.pth"
+        checkpoint_path = config.IL.REAL.ckpt_path
         # if self.config.EVAL.USE_CKPT_CONFIG:
         #     ckpt = self.load_checkpoint(checkpoint_path, map_location="cpu")
         #     config = self._setup_eval_config(ckpt["config"])
@@ -447,28 +447,29 @@ class RealTrainer(BaseVLNCETrainer):
 
         self._initialize_policy(
             config,
-            load_from_ckpt=True,
+            load_from_ckpt=config.IL.REAL.load_ckpt,
             observation_space=observation_space,
             action_space=action_space,
         )
         self.policy.train()
         self.policy.net.train()
-        for param in self.policy.net.parameters():
-            param.requires_grad_(False)
-        for m in [
-            # self.policy.net.final_input_compress,
-            self.policy.net.action_decoder,
-            self.policy.net.visual_post,
-            self.policy.net.spatial_attention_depth,
-            self.policy.net.spatial_attention_rgb,
-            self.policy.net.inst_post,
-            self.policy.net.high_level_attention,
-            self.policy.net.low_level_attention,
-            self.policy.action_distribution,
-        ]:
-            for name, param in m.named_parameters():
-                param.requires_grad_(True)
-                # print(name)
+        if config.IL.REAL.load_ckpt:
+            for param in self.policy.net.parameters():
+                param.requires_grad_(False)
+            for m in [
+                # self.policy.net.final_input_compress,
+                self.policy.net.action_decoder,
+                self.policy.net.visual_post,
+                self.policy.net.spatial_attention_depth,
+                self.policy.net.spatial_attention_rgb,
+                self.policy.net.inst_post,
+                self.policy.net.high_level_attention,
+                self.policy.net.low_level_attention,
+                self.policy.action_distribution,
+            ]:
+                for name, param in m.named_parameters():
+                    param.requires_grad_(True)
+                    # print(name)
 
         real_episode_predictions = defaultdict(list)
         real_observations = real_env.reset()

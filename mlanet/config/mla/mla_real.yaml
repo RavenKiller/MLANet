@@ -23,6 +23,8 @@ IL:
     train_num: 26
     train_iter: 78
     extra_step: 0
+    load_ckpt: True # True for sim_real, False for real scratch
+    ckpt_path: data/checkpoints/mla/mla_best_ppo.pth
 
   DAGGER:
     iterations: 1
