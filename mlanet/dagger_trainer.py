@@ -510,6 +510,17 @@ class DaggerTrainer(BaseVLNCETrainer):
         self.config.freeze()
 
         observation_space, action_space = self._get_spaces(self.config)
+        if not os.path.exists("observation_space.pkl"):
+            import pickle
+            with open("observation_space.pkl", "wb") as f:
+                pickle.dump(observation_space, f)
+            with open("action_space.pkl", "wb") as f:
+                pickle.dump(action_space, f)
+        else:
+            with open("observation_space.pkl", "rb") as f:
+                observation_space = pickle.load(f)
+            with open("action_space.pkl", "rb") as f:
+                action_space = pickle.load(f)
 
         self._initialize_policy(
             self.config,

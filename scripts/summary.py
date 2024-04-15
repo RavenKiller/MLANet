@@ -20,8 +20,8 @@ if not os.path.exists("data/plots"):
 # model_names = ["mla_aug3","mla_aug_back","mla_aug2"]
 model_names = [
     # "mla_head1_dim256",
-    "mla_head1_dim512",
-    "mla_head2_dim512",
+    "mla_aug_da_tune",
+    # "mla_head2_dim512",
 ]
 checkpoint_path = os.path.join("data", "checkpoints")
 eval_folder = "evals"

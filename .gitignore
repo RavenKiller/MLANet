@@ -166,3 +166,4 @@ predictions*.json
 eval_*.sh
 tmp.sh
 *.svg
+slurm*.sh
