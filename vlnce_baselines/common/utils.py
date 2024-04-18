@@ -6,7 +6,19 @@ import torch
 from gym import spaces
 import numbers
 import numpy as np
+import copy
+import json
+import random
+import re
+import time
 
+import clip
+import nltk
+import torch
+from pathlib import Path
+import matplotlib.pyplot as plt
+import json
+from dtw import dtw
 
 # from habitat.core.utils import try_cv2_import
 from habitat.utils import profiling_wrapper
@@ -189,13 +201,6 @@ def batch_obs(
 
 #     return batch_t
 
-from pathlib import Path
-import matplotlib.pyplot as plt
-import json
-import math
-import numpy as np
-from dtw import dtw
-import time
 EPISODE_NUM = 13
 FORWARD = 1
 TURN_LEFT = 2
@@ -303,3 +308,114 @@ class Metrics:
         if show:
             plt.show()
         plt.close()
+
+
+def instruction_cut_clip(episodes, append_dot=False, keep_subs=True, refine=False, split_func=None, lower_all=False):
+    """
+    Params:
+        episodes: a dataset list, [{"instruction_text":""}]
+        append_dot: whether to add a "." at the end of sub-instructions
+        keep_subs: whether to keep sub-instruction text after processing
+        refine: whether to use proposed refine processing
+        split_func: the function used to cut instructions, default is `nltk.sent_tokenize`
+        lower_all: whether to lower all characters in sub-instructions.
+    Return:
+        train_data with "sub_instruction_tokens" and "sub_instruction"
+    """
+    if split_func is None:
+        split_func = nltk.sent_tokenize
+    train_data = copy.deepcopy(episodes)
+    # pre process
+    char_pattern = re.compile(r"[a-zA-Z]")
+    for i, item in enumerate(train_data):
+        inst = item["instruction_text"]
+        inst = inst.strip()
+        start_idx = 0
+        while not char_pattern.search(inst[start_idx]):
+            start_idx += 1
+        inst = inst[start_idx:]
+        if lower_all:
+            inst = inst.lower()
+        train_data[i]["instruction_text"] = inst.replace("...", ".").replace("..", ".").replace(".",". ").replace("  ", " ")
+    
+    # cut by nltk
+    pattern = re.compile(r"\r\n")
+    for i, item in enumerate(train_data):
+        inst = item["instruction_text"]
+        res = []
+        now = pattern.split(inst)
+        for v in now:
+            res.extend(split_func(v))
+        train_data[i]["sub_instruction"] = [piece.strip() for piece in res if piece.strip()]
+    # refine
+    if refine:
+        punctuation_list = [",", "."]
+        char_pattern = re.compile(r"[a-zA-Z]+")
+        def judge_verb(word):
+            const_verbs = ["wait", "turn", "walk", "stop"]
+            if "VB" in word[1]:
+                return True
+            if word[0] in const_verbs:
+                return True
+            return False
+        for i, item in enumerate(train_data):
+            new_sub = []
+            for k, piece in enumerate(item["sub_instruction"]):
+                word_list = nltk.pos_tag(nltk.word_tokenize(piece))
+                tmp = ""
+                for x, word in enumerate(word_list):
+                    if (word[0].lower()=="and" or word[0]=="," or word[0].lower()=="then") and (x+1<len(word_list) and judge_verb(word_list[x+1])):
+                        if tmp and char_pattern.search(tmp):
+                            new_sub.append(tmp)
+                        if word[0].lower()=="and" or word[0].lower()=="then":
+                            tmp = word[0]
+                        else:
+                            tmp = ""
+                            
+                    elif (word[0]=="and" or word[0]==",") and (x+1<len(word_list) and word_list[x+1][0]=="then"):
+                        if tmp:
+                            new_sub.append(tmp)
+                        if word[0].lower()=="and" or word[0].lower()=="then":
+                            tmp = word[0]
+                        else:
+                            tmp = ""
+                    else:
+                        if not tmp or word[0] in punctuation_list:
+                            tmp+=word[0]
+                        else:
+                            tmp+=(" "+word[0])
+                if tmp:
+                    new_sub.append(tmp)
+            train_data[i]["sub_instruction"] = new_sub
+    
+    # post process and generate tokens
+    char_pattern = re.compile(r"[a-zA-Z]")
+    pad_index = 0
+    sub_pad_len = 77 # 0.05%
+    sub_num = 12 # 0.04%
+    useless_sub = [pad_index]*sub_pad_len
+    for i, item in enumerate(train_data):
+        tokens_all = []
+        tokens_split = []
+        for k, piece in enumerate(item["sub_instruction"]):
+            piece = piece.strip()
+            assert piece
+            idx = len(piece)-1
+            while idx>=0 and piece[idx] in [".", ","]:
+                idx -= 1
+            if append_dot:
+                piece = piece[0:(idx+1)]+"."
+            else:
+                piece = piece[0:(idx+1)]
+            piece = piece.replace("``", "\"").replace("''", "\"")
+            train_data[i]["sub_instruction"][k] = piece
+            piece_tokens = clip.tokenize(piece, truncate=True).squeeze(0).tolist()
+            tokens_split.append(piece_tokens)
+        if len(tokens_split)>sub_num:
+            tokens_split = tokens_split[0:sub_num]
+        tokens_split.extend([useless_sub]*(sub_num-len(tokens_split)))
+        
+        train_data[i]["sub_instruction_tokens"] = tokens_split
+        if not keep_subs:
+            del item["sub_instruction"]
+    return train_data

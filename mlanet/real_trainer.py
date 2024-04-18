@@ -86,7 +86,7 @@ class RealEnv:
         self.config = config
         self.ep_idx = -1
         self.step_id = 0
-        self.dataset_folder = "/root/autodl-tmp/data/vlntj-ce-extend-{}".format(mode)
+        self.dataset_folder = "data/vlntj-ce-extend-{}".format(mode)
         self.episode_ids = [
             int(v) for v in os.listdir(self.dataset_folder) if v.isnumeric()
         ]
@@ -98,12 +98,13 @@ class RealEnv:
         self.train_iter = train_iter
         self.extra_step = extra_step
         self.current_iter = 0
-        with gzip.open("/root/MLANet/data/datasets/R2R_VLNCE_NRSub/train/train.json.gz", "r") as f:
+        with gzip.open("data/datasets/R2R_VLNCE_NRSub/train/train.json.gz", "r") as f:
             train_data = json.loads(f.read())
             self.vocab = train_data["instruction_vocab"]
 
         self.num_envs = 1
         self.old_obs = None
+
     def _tokenize(self, s, pad_num=200):
         words = word_tokenize(s.lower())
         tokens = []
@@ -227,7 +228,8 @@ class RealEnv:
             info = {}
         else:  # next episode
             tail_idx = max([int(v.replace(".png","")) for v in os.listdir(os.path.join(self.dataset_folder, str(ep_id), "rgb"))])
-            obs = self.get_current_obs(tail_idx)
+            # obs = self.get_current_obs(tail_idx)
+            obs = {}
             mask = 0.0
             done = True
             info = {}
@@ -299,7 +301,7 @@ class RealEnv:
                 results["spl"][i] = metrics.calc_spl()
                 results["apa"][i] = metrics.calc_apa()
                 results["ndtw"][i] = metrics.calc_ndtw()
-                # metrics.plot_pos(new_folder, i, show=False)
+                metrics.plot_pos(new_folder, i, show=False)
         return results
 
 
@@ -720,7 +722,7 @@ class RealTrainer(BaseVLNCETrainer):
         if config.EVAL.EPISODE_COUNT > -1:
             num_eps = min(config.EVAL.EPISODE_COUNT, num_eps)
 
-        pbar = tqdm.tqdm(total=num_eps) if config.use_pbar else None
+        pbar = tqdm.tqdm(total=num_eps)
 
         while len(stats_episodes) < num_eps and real_env.num_envs > 0:
             with torch.no_grad():

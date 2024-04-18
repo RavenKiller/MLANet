@@ -7,8 +7,8 @@ TORCH_GPU_ID: 0
 NUM_ENVIRONMENTS: 1
 TENSORBOARD_DIR: data/tensorboard_dirs/mla_real
 CHECKPOINT_FOLDER: data/checkpoints/mla_real
-EVAL_CKPT_PATH_DIR: data/checkpoints/mla_real
-RESULTS_DIR: data/checkpoints/mla_real/evals
+EVAL_CKPT_PATH_DIR: data/checkpoints/sr54
+RESULTS_DIR: data/checkpoints/sr54/evals
 
 IL:
   epochs: 45

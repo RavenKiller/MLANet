@@ -9,6 +9,7 @@ else:
         dagger_trainer,
         ppo_trainer_v21,
         real_trainer,
+        alkaid_trainer,
     )
 
 from mlanet.models import (

@@ -22,3 +22,5 @@ torchvision==0.14.1+cu116
 tensorflow==2.9.0
 tensorboard==2.9.0
 nltk
+
+timm=0.6.7
