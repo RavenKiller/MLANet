@@ -5,10 +5,10 @@ SIMULATOR_GPU_ID: 0 # new version
 SIMULATOR_GPU_IDS: [0] # new version
 TORCH_GPU_ID: 0
 NUM_ENVIRONMENTS: 1
-TENSORBOARD_DIR: data/tensorboard_dirs/mla_real
-CHECKPOINT_FOLDER: data/checkpoints/mla_real
-EVAL_CKPT_PATH_DIR: data/checkpoints/sr54
-RESULTS_DIR: data/checkpoints/sr54/evals
+TENSORBOARD_DIR: data/tensorboard_dirs/mla_real_scratch
+CHECKPOINT_FOLDER: data/checkpoints/mla_real_scratch
+EVAL_CKPT_PATH_DIR: data/checkpoints/mla_real_scratch
+RESULTS_DIR: data/checkpoints/mla_real_scratch/evals
 
 IL:
   epochs: 45
@@ -23,7 +23,7 @@ IL:
     train_num: 26
     train_iter: 78
     extra_step: 0
-    load_ckpt: True # True for sim_real, False for real scratch
+    load_ckpt: False # True for sim_real, False for real scratch
     ckpt_path: data/checkpoints/mla/mla_best_ppo.pth
 
   DAGGER:

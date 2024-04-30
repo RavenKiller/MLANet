@@ -88,6 +88,21 @@ def load_depth_model():
     model.eval()
     return model
 
+def center_crop(im):
+    width, height = im.size   # Get dimensions
+    new_width = min(width, height)
+    new_height = new_width
+
+    left = (width - new_width)/2
+    top = (height - new_height)/2
+    right = (width + new_width)/2
+    bottom = (height + new_height)/2
+
+    # Crop the center of the image
+    im = im.crop((left, top, right, bottom))
+
+    return im
+
 
 class AlkaidEnv:
     def __init__(self, config, mode="val", train_num=1, train_iter=1, extra_step=0):
@@ -131,7 +146,7 @@ class AlkaidEnv:
         
         depth_pil = self.depth_model.infer_pil(image, output_type='pil')
         
-        # depth_pil = depth_pil.resize(target_size)
+        depth_pil = depth_pil.resize(target_size)
         out_arr = np.array(depth_pil)
         out_arr = out_arr*scale # multiplied by 4, assume it is accurate absolute depth*1000
         # depth_pil = Image.fromarray(out_arr.astype(np.uint16))
@@ -142,7 +157,10 @@ class AlkaidEnv:
         rgb_pil = Image.open(
             io.BytesIO(rgb)
         ).convert("RGB")
+        # center crop and resize
+        rgb_pil = center_crop(rgb_pil)
         rgb = np.array(rgb_pil.resize((224,224)))
+
         time_rgb = time.time()-tic
         tic = time.time()
 
@@ -300,6 +318,7 @@ class AlkaidTrainer(BaseVLNCETrainer):
             1, 1, dtype=torch.uint8, device=self.device
         )
         self.real_env = AlkaidEnv(config=self.config, mode="val")
+        self.step_cnt = 0
 
         app.add_url_rule("/reset_hiddens", "reset_hiddens", self.reset_hiddens, methods=["POST"])
         app.add_url_rule("/predict_action", "predict_action", self.predict_action, methods=["POST"])
@@ -321,12 +340,14 @@ class AlkaidTrainer(BaseVLNCETrainer):
         self.real_not_done_masks = torch.zeros(
             1, 1, dtype=torch.uint8, device=self.device
         )
+        self.step_cnt = 0
         return {"status":"success"}
 
     def predict_action(self):
         ep_id = request.form.get('ep_id')
         rgb = request.form.get('rgb')
         depth = request.form.get('depth', None)
+        path_len = len(list(os.listdir(os.path.join(self.real_env.dataset_folder, str(ep_id), "rgb"))))
         tic = time.time()
         rgb = b64decode(rgb)
         if depth:
@@ -356,8 +377,12 @@ class AlkaidTrainer(BaseVLNCETrainer):
             1, 1, dtype=torch.uint8, device=self.device
         )
         time_info_forward = time.time()-tic
+        action_out = real_actions.cpu().item()
+        if self.step_cnt>=path_len+3 or self.step_cnt>100:
+            action_out = 0
+        self.step_cnt+=1
         return {
             "status":"success",
-            "action":real_actions.cpu().item(), 
+            "action":action_out, 
             "time_info":{"decode_b64": time_info_decode,"observation":time_info_observation, "observation_detail":time_info_detail, "forward":time_info_forward}
             }
