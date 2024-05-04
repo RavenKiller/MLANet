@@ -5,7 +5,7 @@ TORCH_GPU_ID: 0
 NUM_ENVIRONMENTS: 6
 TENSORBOARD_DIR: data/tensorboard_dirs/mla_alkaid
 CHECKPOINT_FOLDER: data/checkpoints/mla_alkaid
-EVAL_CKPT_PATH_DIR: data/checkpoints/sr54/ckpt.MLAPolicy.real.trainum26.trainiter78.pth
+EVAL_CKPT_PATH_DIR: data/checkpoints/mla_real_scratch/ckpt.MLAPolicy.real.trainum26.trainiter78.pth
 RESULTS_DIR: data/checkpoints/mla_alkaid/evals
 
 EVAL:

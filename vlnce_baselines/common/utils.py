@@ -264,9 +264,13 @@ class Metrics:
         spl = sr*gt_l/max(pred_l, gt_l)
         return spl
     def calc_apa(self):
-        pred_action = np.array(self.pred_action[:len(self.gt_action)], dtype=int)
+        pred_action = np.array(self.pred_action, dtype=int)
         gt_action = np.array(self.gt_action, dtype=int)
-        return np.sum(pred_action==gt_action)/len(gt_action)
+        if len(pred_action)<len(gt_action):
+            pred_action = np.pad(pred_action, pad_width=((0, len(gt_action)-len(pred_action))), mode="constant")
+        else:
+            pred_action = pred_action[:len(gt_action)]
+        return float(np.sum(pred_action==gt_action))/len(gt_action)
     def calc_ndtw(self):
         dtw_distance = dtw(
             self.pred_position, self.gt_position, dist=euclidean_distance
@@ -298,7 +302,7 @@ class Metrics:
         ms = 144
         plt.scatter(gt_position[0,0], gt_position[0,1], marker="*", color="k", s=ms)
         plt.scatter(gt_position[-1,0], gt_position[-1,1], marker="^", color="k", s=ms)
-        plt.legend(["MEE","Ground truth","Start","Target"], fontsize=18)
+        plt.legend(["MLANet","Ground truth","Start","Target"], fontsize=18)
         # plt.axis('scaled')
         plt.xlim([x_min-0.04,x_min+d_max+0.04])
         plt.ylim([y_min-0.04,y_min+d_max+0.04])
