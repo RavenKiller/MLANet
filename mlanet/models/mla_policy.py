@@ -390,7 +390,7 @@ class MLANet(Net):
         if self.model_config.ablate_instruction:
             instruction_embedding = instruction_embedding * 0
             # mask_sub = (sub_instruction_embedding==0).all(dim=2)
-        if self.model_config.ablate_depth:
+        if self.model_config.ablate_sub_instruction:
             sub_instruction_embedding = sub_instruction_embedding * 0
         if self.model_config.ablate_depth:
             depth_embedding = depth_embedding * 0
@@ -398,8 +398,8 @@ class MLANet(Net):
             rgb_embedding = rgb_embedding * 0
             rgb_embedding_seq = rgb_embedding_seq * 0
         
-        # Ablation of SSA, the same as ablating sub-instructions
-        if self.model_config.ablate_ssa:
+        # Ablation of FSA, the same as ablating sub-instructions
+        if self.model_config.ablate_fsa:
             # Absolutely mask sub-instructions
             sub_instruction_embedding = sub_instruction_embedding * 0
 
@@ -471,6 +471,9 @@ class MLANet(Net):
             f_i_low[:,0,:self.low_inst_size] = torch.mean(instruction_embedding, dim=1)
             f_i_high.fill_(0)
             f_i_high[:,0,:self.high_inst_size] = torch.mean(sub_instruction_embedding, dim=1)
+        if self.model_config.ablate_fsa:
+            # Absolutely mask sub-instructions
+            sub_instruction_embedding = sub_instruction_embedding * 0
 
         f_i = torch.cat([f_i_high.squeeze(1), f_i_low.squeeze(1)], dim=1)
         f_i = self.inst_post(f_i)

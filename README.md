@@ -1,4 +1,4 @@
-# MLANet: Multi-Level Attention Network with Sub-instruction for Continuous Vision-and-Language Navigation
+# Multi-Level Attention Network with Sub-instruction for Continuous Vision-and-Language Navigation
 <!-- Official implrementations of *Multi-Level Attention with Sub-instruction for
 Continuous Vision-and-Language Navigation* ([paper]()) -->
 
@@ -61,6 +61,8 @@ Our config files is stored in `mlanet/config/mla`:
 | `mla_ppo.yaml` | Fine-tune model with PPO |
 | `mla_ablate.yaml` | Ablation study |
 | `eval_single.yaml` | Evaluate and visualize a single path |
+| `mla_real.yaml` | Real-world open-loop test |
+| `mla_alkaid.yaml` | Real-world close-loop test on the Alkaid robot |
 
 
 ## Performance
@@ -71,6 +73,10 @@ The best model on validation sets is trained with EnvDrop augmentation and then 
 | Test       | 7.42 | 6.78 | 0.39 | 0.34 | 0.32 |
 | Val Unseen | 7.21 | 6.30 | 0.42 | 0.38 | 0.35 |
 | Val Seen   | 8.10 | 5.83 | 0.50 | 0.44 | 0.42 |
+
+## Real-world application
+The model is evaluated on collected [VLNCE@TJ validation set](https://www.jianguoyun.com/p/DXWYYPIQhY--CRjtp8QFIAA). Demonstrations:
+
 
 ## Checkpoints
 <!-- \[[val](https://www.jianguoyun.com/p/DSOE7KcQhY--CRjUtMMEIAA )\] \[[test](https://www.jianguoyun.com/p/DSYqcBcQhY--CRiAkbkEIAA)\] -->

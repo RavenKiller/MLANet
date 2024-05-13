@@ -443,7 +443,7 @@ class MLANetLegacy(Net):
             rgb_embedding_seq = rgb_embedding_seq * 0
         
         # Ablation of SSA, the same as ablating sub-instructions
-        if self.model_config.ablate_ssa:
+        if self.model_config.ablate_fsa:
             # Absolutely mask sub-instructions
             sub_instruction_embedding = sub_instruction_embedding * 0
 

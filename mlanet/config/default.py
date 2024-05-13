@@ -239,7 +239,7 @@ _C.MODEL.ablate_sub_instruction = False
 
 
 _C.MODEL.ablate_mla = False
-_C.MODEL.ablate_ssa = False
+_C.MODEL.ablate_fsa = False
 
 _C.MODEL.INSTRUCTION_ENCODER = CN()
 _C.MODEL.INSTRUCTION_ENCODER.sensor_uuid = "instruction"
