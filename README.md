@@ -75,7 +75,21 @@ The best model on validation sets is trained with EnvDrop augmentation and then 
 | Val Seen   | 8.10 | 5.83 | 0.50 | 0.44 | 0.42 |
 
 ## Real-world application
-The model is evaluated on collected [VLNCE@TJ validation set](https://www.jianguoyun.com/p/DXWYYPIQhY--CRjtp8QFIAA). Demonstrations:
+
+<img src="https://github.com/RavenKiller/MLANet/assets/41775391/6ec680f9-b19a-4b75-9f4d-80aaf342ce8e" alt="alkaid_robot" width="300">
+
+Alkaid is a self-developed interactive service robot. Here are some parameters:
+
++ Camera: 720P resolution, 90° max FOV
++ Screen: 1080P, touch screen
++ Microphone: 4-microphone circular array, 61dB SNR
++ Speaker: 2 stereo units, 150Hz-20kHz output
++ Chassis: 2-wheel differential drive, 0.5m/s max speed, 1.2rad/s max angular speed
+
+The model is evaluated on collected [VLNCE@TJ validation set](https://www.jianguoyun.com/p/DXWYYPIQhY--CRjtp8QFIAA). Demonstrations (click to watch the full video):
+
+[![Watch the video](https://github.com/RavenKiller/MLANet/assets/41775391/9109d985-b349-4cc2-acc7-251c121f5660)](http://starzx.top:5555/vlncetj_alkaid.mp4)
+
 
 
 ## Checkpoints
