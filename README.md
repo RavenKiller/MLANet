@@ -74,6 +74,39 @@ The best model on validation sets is trained with EnvDrop augmentation and then 
 | Val Unseen | 7.21 | 6.30 | 0.42 | 0.38 | 0.35 |
 | Val Seen   | 8.10 | 5.83 | 0.50 | 0.44 | 0.42 |
 
+## Qualitative examples
+
++ Val unseen, episode 7. Go straight past the pool. Walk between the bar and chairs.  Stop when you get to the corner of the bar.  That's where you will wait. (success)
+
+https://github.com/user-attachments/assets/9c458100-7276-4213-8a9f-e929e5166cb9
+
++ Val unseen, episode 90. Walk into the dining area and make a right when you get to the end of the table. Walk down the hall and stand in front of the door of the dining room at the end of the hall. (failure)
+
+
+https://github.com/user-attachments/assets/8332e1a4-6375-49f2-8fe6-be7e934c8a37
+
+
++ Val unseen, episode 1124. Walk up the stairs and go left into the bedroom. Turn left into the bathroom. (success)
+
+
+https://github.com/user-attachments/assets/dce7affc-ee1d-4437-b5cb-f1f3af0ab578
+
++ Val unseen, episode 1584. Go left around the wooden barrier and stop once you reach the wooden barrier on the opposite corner. (failure)
+
+https://github.com/user-attachments/assets/2e0b80bc-505d-47b4-9ff1-07c47787b881
+
++ Val seen, episode 12. move forward in front of the television. turn left and exit the room.  go down hallway and step into the bedroom on the left. (success)
+
+
+https://github.com/user-attachments/assets/a9d51795-1952-4be9-b8f0-d608044cb16f
+
++ Val seen, episode 369. Leave the playroom and walk straight ahead. Walk to the balcony across from the balcony. Stop in front of the balcony. (failure)
+
+
+https://github.com/user-attachments/assets/19f36430-4281-4167-9fc6-8d0871b598bb
+
+
+
 ## Real-world application
 
 <img src="https://github.com/RavenKiller/MLANet/assets/41775391/6ec680f9-b19a-4b75-9f4d-80aaf342ce8e" alt="alkaid_robot" width="300">
