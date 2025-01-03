@@ -34,6 +34,7 @@ from habitat_baselines.common.obs_transformers import (
 from habitat_baselines.common.rollout_storage import RolloutStorage
 from habitat_baselines.common.tensorboard_utils import TensorboardWriter
 from habitat_baselines.rl.ddppo.algo import DDPPO
+
 try:
     from habitat_baselines.rl.ddppo.ddp_utils import (
         EXIT,
@@ -59,6 +60,7 @@ except ModuleNotFoundError:
         requeue_job,
         save_interrupted_state,
     )
+
     load_resume_state = load_interrupted_state
     save_resume_state = save_interrupted_state
 
@@ -68,6 +70,7 @@ except ModuleNotFoundError:
 from thop import profile
 
 from habitat_baselines.rl.ppo import PPO
+
 # from habitat_baselines.rl.ppo.policy import Policy
 from mlanet.models.mla_ppo_policy import MLAPPOPolicy
 from habitat_baselines.utils.common import (
@@ -77,6 +80,7 @@ from vlnce_baselines.common.utils import (
     batch_obs,
 )
 from vlnce_baselines.common.utils import extract_instruction_tokens
+
 # from habitat_baselines.utils.env_utils import construct_envs
 from vlnce_baselines.common.env_utils import construct_envs
 
@@ -86,7 +90,8 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
     r"""Trainer class for PPO algorithm
     Paper: https://arxiv.org/abs/1707.06347.
     """
-    supported_tasks = ["Nav-v0","VLN-v0"]
+
+    supported_tasks = ["Nav-v0", "VLN-v0"]
 
     SHORT_ROLLOUT_THRESHOLD: float = 0.25
     _is_distributed: bool
@@ -124,20 +129,19 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
     @obs_space.setter
     def obs_space(self, new_obs_space):
         self._obs_space = new_obs_space
+
     def _should_save_resume_state(self) -> bool:
         return (
+            not self.config.RL.preemption.save_state_batch_only
+            or is_slurm_batch_job()
+        ) and (
             (
-                not self.config.RL.preemption.save_state_batch_only
-                or is_slurm_batch_job()
+                int(self.num_updates_done + 1)
+                % self.config.RL.preemption.save_resume_state_interval
             )
-            and (
-                (
-                    int(self.num_updates_done + 1)
-                    % self.config.RL.preemption.save_resume_state_interval
-                )
-                == 0
-            )
+            == 0
         )
+
     def _all_reduce(self, t: torch.Tensor) -> torch.Tensor:
         r"""All reduce helper method that moves things to the correct
         device and only runs if distributed
@@ -225,7 +229,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
     def _init_envs(self, config=None):
         if config is None:
             config = self.config
-        
+
         tmp = get_env_class(config.ENV_NAME)
         self.envs = construct_envs(
             config,
@@ -234,8 +238,8 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
         )
 
     def _init_train(self):
-        resume_state = load_resume_state() # !! no resume
-        resume_state=None
+        resume_state = load_resume_state()  # !! no resume
+        resume_state = None
         if resume_state is not None:
             # self.config: Config = resume_state["config"] !!
             self.using_velocity_ctrl = (
@@ -361,13 +365,11 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
 
         observations = self.envs.reset()
         observations = extract_instruction_tokens(
-            observations, 
+            observations,
             self.config.TASK_CONFIG.TASK.INSTRUCTION_SENSOR_UUID,
             self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
         )
-        batch = batch_obs(
-            observations, device=self.device
-        )
+        batch = batch_obs(observations, device=self.device)
         batch = apply_obs_transforms_batch(batch, self.obs_transforms)
 
         if self._static_encoder:
@@ -547,13 +549,11 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
 
         t_update_stats = time.time()
         observations = extract_instruction_tokens(
-            observations, 
+            observations,
             self.config.TASK_CONFIG.TASK.INSTRUCTION_SENSOR_UUID,
             self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
         )
-        batch = batch_obs(
-            observations, device=self.device
-        )
+        batch = batch_obs(observations, device=self.device)
         batch = apply_obs_transforms_batch(batch, self.obs_transforms)
 
         rewards = torch.tensor(
@@ -711,7 +711,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
         if len(metrics) > 0:
             writer.add_scalars("metrics", metrics, self.num_steps_done)
             # !! test writer
-            writer.add_scalars("metrics", {"a":1}, self.num_steps_done)
+            writer.add_scalars("metrics", {"a": 1}, self.num_steps_done)
 
         writer.add_scalars(
             "losses",
@@ -780,7 +780,11 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
             lr_lambda=lambda x: 1 - self.percent_done(),
         )
 
-        interrupted_state = load_interrupted_state(filename=os.path.join(self.config.CHECKPOINT_FOLDER, ".resume_state.pth"))
+        interrupted_state = load_interrupted_state(
+            filename=os.path.join(
+                self.config.CHECKPOINT_FOLDER, ".resume_state.pth"
+            )
+        )
         if interrupted_state is not None:
             self.agent.load_state_dict(interrupted_state["state_dict"])
             self.agent.optimizer.load_state_dict(
@@ -845,9 +849,10 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                             config=self.config,
                             requeue_stats=requeue_stats,
                         ),
-                        filename=os.path.join(self.config.CHECKPOINT_FOLDER, ".resume_state.pth")
+                        filename=os.path.join(
+                            self.config.CHECKPOINT_FOLDER, ".resume_state.pth"
+                        ),
                     )
-
 
                 if EXIT.is_set():
                     profiling_wrapper.range_pop()  # train update
@@ -1014,13 +1019,11 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
 
         observations = self.envs.reset()
         observations = extract_instruction_tokens(
-            observations, 
+            observations,
             self.config.TASK_CONFIG.TASK.INSTRUCTION_SENSOR_UUID,
             self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
         )
-        batch = batch_obs(
-            observations, device=self.device
-        )
+        batch = batch_obs(observations, device=self.device)
         batch = apply_obs_transforms_batch(batch, self.obs_transforms)
 
         current_episode_reward = torch.zeros(
@@ -1045,9 +1048,9 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
             device=self.device,
             dtype=torch.bool,
         )
-        stats_episodes: Dict[
-            Any
-        ] = {}  # dict of dicts that stores stats per episode
+        stats_episodes: Dict[Any] = (
+            {}
+        )  # dict of dicts that stores stats per episode
 
         rgb_frames = [
             [] for _ in range(self.config.NUM_ENVIRONMENTS)
@@ -1094,7 +1097,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                     not_done_masks,
                     deterministic=False,
                 )
-                final_times.append(time.time()-tic)
+                final_times.append(time.time() - tic)
                 traj_times += final_times[-1]
 
                 prev_actions.copy_(actions)  # type: ignore
@@ -1117,7 +1120,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                 list(x) for x in zip(*outputs)
             ]
             observations = extract_instruction_tokens(
-                observations, 
+                observations,
                 self.config.TASK_CONFIG.TASK.INSTRUCTION_SENSOR_UUID,
                 self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
             )
@@ -1155,7 +1158,9 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                     )
                     current_episode_reward[i] = 0
                     # use scene_id + episode_id as unique id for storing stats
-                    stats_episodes[current_episodes[i].episode_id] = episode_stats
+                    stats_episodes[current_episodes[i].episode_id] = (
+                        episode_stats
+                    )
                     traj_times = 0
 
                     if len(self.config.VIDEO_OPTION) > 0:
@@ -1200,7 +1205,9 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
             )
         with open("{}_MLANet_times.json".format(config.EVAL.SPLIT), "w") as f:
             json.dump(final_times, f)
-        with open("{}_MLANet_stats_episodes.json".format(config.EVAL.SPLIT), "w") as f:
+        with open(
+            "{}_MLANet_stats_episodes.json".format(config.EVAL.SPLIT), "w"
+        ) as f:
             json.dump(stats_episodes, f)
         num_episodes = len(stats_episodes)
         aggregated_stats = {}
@@ -1270,12 +1277,11 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
         config.ENV_NAME = "VLNCEInferenceEnv"
         config.freeze()
 
-        
         self.envs = construct_envs(
             config,
             get_env_class(config.ENV_NAME),
             workers_ignore_signals=is_slurm_batch_job(),
-            auto_reset_done=False
+            auto_reset_done=False,
         )
 
         if self.using_velocity_ctrl:
@@ -1348,9 +1354,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                 ep_id = current_episodes[i].episode_id
                 k = current_episodes[i].instruction.instruction_id
                 instruction_ids[ep_id] = int(k)
-        logger.info(
-            f"Episodes Num: {envs.count_episodes()}"
-        )
+        logger.info(f"Episodes Num: {envs.count_episodes()}")
 
         with tqdm.tqdm(
             total=sum(envs.count_episodes()),
@@ -1426,7 +1430,9 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                                 images=rgb_frames[i],
                                 episode_id=current_episodes[i].episode_id,
                                 checkpoint_idx=0,
-                                metrics=self._extract_scalars_from_info(infos[i]),
+                                metrics=self._extract_scalars_from_info(
+                                    infos[i]
+                                ),
                                 tb_writer=writer,
                             )
 
@@ -1452,7 +1458,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                     batch,
                     rgb_frames,
                 )
-        print(len(episode_predictions),sum(envs.count_episodes()))
+        print(len(episode_predictions), sum(envs.count_episodes()))
         envs.close()
         if config.INFERENCE.FORMAT == "r2r":
             with open(config.INFERENCE.PREDICTIONS_FILE, "w") as f:

@@ -133,7 +133,7 @@ class MLANet(Net):
             rnn_input_size += self.prev_action_embedding.embedding_dim
         dropout_ratio_rnn = dropout_ratio / 2
         state_encoder_hidden_size = model_config.STATE_ENCODER.hidden_size
-        if state_encoder_hidden_size!=model_config.MLA.hidden_size:
+        if state_encoder_hidden_size != model_config.MLA.hidden_size:
             state_encoder_hidden_size = model_config.MLA.hidden_size
         self.low_state_encoder = build_rnn_state_encoder(
             input_size=rnn_input_size,
@@ -223,9 +223,7 @@ class MLANet(Net):
         )
 
         # Init the progress monitor
-        self.progress_monitor = nn.Linear(
-            state_encoder_hidden_size, 1
-        )
+        self.progress_monitor = nn.Linear(state_encoder_hidden_size, 1)
         if self.model_config.PROGRESS_MONITOR.use:
             nn.init.kaiming_normal_(
                 self.progress_monitor.weight, nonlinearity="tanh"
@@ -286,55 +284,71 @@ class MLANet(Net):
 
     def _peak_loss(self, score, mask=None):
         curve = self.model_config.PEAK_ATTENTION.curve
-        if curve=="gaussian":
+        if curve == "gaussian":
             mu = (
-                torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
+                torch.argmax(score, dim=1)
+                .unsqueeze(1)
+                .repeat((1, score.shape[1]))
             )
             sigma = (
                 torch.tensor(
-                    [self.peak_loss_sigma], dtype=torch.float, device=score.device
+                    [self.peak_loss_sigma],
+                    dtype=torch.float,
+                    device=score.device,
                 )
                 .unsqueeze(1)
                 .repeat(score.shape)
             )
             x = torch.ones_like(score).cumsum(dim=1) - 1
-            x = -((x - mu) ** 2) / (2 * sigma ** 2)
+            x = -((x - mu) ** 2) / (2 * sigma**2)
             x = torch.exp(x)
             if mask is not None:
                 x[mask] = 0
             e = x / (1e-10 + x.sum(dim=1, keepdim=True))
-        elif curve=="constant":
+        elif curve == "constant":
             x = torch.ones_like(score)
             if mask is not None:
                 x[mask] = 0
             e = x / (1e-10 + x.sum(dim=1, keepdim=True))
-        elif curve=="linear":
-            maxpoint = torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
+        elif curve == "linear":
+            maxpoint = (
+                torch.argmax(score, dim=1)
+                .unsqueeze(1)
+                .repeat((1, score.shape[1]))
+            )
             x = torch.ones_like(score).cumsum(dim=1) - 1
             if mask is not None:
                 x[mask] = 0
             lens = torch.argmax(x, dim=1).unsqueeze(1)
-            y = torch.max(x, lens-x)
-            x = y-(torch.abs(maxpoint-x))
+            y = torch.max(x, lens - x)
+            x = y - (torch.abs(maxpoint - x))
             e = x / (1e-10 + x.sum(dim=1, keepdim=True))
-        elif curve=="quadratic":
-            maxpoint = torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
+        elif curve == "quadratic":
+            maxpoint = (
+                torch.argmax(score, dim=1)
+                .unsqueeze(1)
+                .repeat((1, score.shape[1]))
+            )
             x = torch.ones_like(score).cumsum(dim=1) - 1
             if mask is not None:
                 x[mask] = 0
             lens = torch.argmax(x, dim=1).unsqueeze(1)
-            y = torch.max(x, lens-x)
-            x = y-(torch.abs(maxpoint-x))
+            y = torch.max(x, lens - x)
+            x = y - (torch.abs(maxpoint - x))
             x = x**2
             e = x / (1e-10 + x.sum(dim=1, keepdim=True))
-        elif curve=="cubic":
-            maxpoint = torch.argmax(score, dim=1).unsqueeze(1).repeat((1, score.shape[1]))
+        elif curve == "cubic":
+            maxpoint = (
+                torch.argmax(score, dim=1)
+                .unsqueeze(1)
+                .repeat((1, score.shape[1]))
+            )
             x = torch.ones_like(score).cumsum(dim=1) - 1
             if mask is not None:
                 x[mask] = 0
             lens = torch.argmax(x, dim=1).unsqueeze(1)
-            y = torch.max(x, lens-x)
-            x = y-(torch.abs(maxpoint-x))
+            y = torch.max(x, lens - x)
+            x = y - (torch.abs(maxpoint - x))
             x = x**3
             e = x / (1e-10 + x.sum(dim=1, keepdim=True))
         loss = F.mse_loss(score, e, reduction="none").sum(dim=1)
@@ -397,7 +411,7 @@ class MLANet(Net):
         if self.model_config.ablate_rgb:
             rgb_embedding = rgb_embedding * 0
             rgb_embedding_seq = rgb_embedding_seq * 0
-        
+
         # Ablation of FSA, the same as ablating sub-instructions
         if self.model_config.ablate_fsa:
             # Absolutely mask sub-instructions
@@ -425,12 +439,18 @@ class MLANet(Net):
 
         # Low and high level state encoders
         rnn_states_out = rnn_states.detach().clone()
-        (h_l, rnn_states_out[:, 0 : self.s1],) = self.low_state_encoder(
+        (
+            h_l,
+            rnn_states_out[:, 0 : self.s1],
+        ) = self.low_state_encoder(
             v_in,
             rnn_states[:, 0 : self.s1],
             masks,
         )
-        (h_h, rnn_states_out[:, self.s1 : self.s2],) = self.high_state_encoder(
+        (
+            h_h,
+            rnn_states_out[:, self.s1 : self.s2],
+        ) = self.high_state_encoder(
             v_in,
             rnn_states[:, self.s1 : self.s2],
             masks,
@@ -468,16 +488,19 @@ class MLANet(Net):
         # Ablation of MLA
         if self.model_config.ablate_mla:
             f_i_low.fill_(0)
-            f_i_low[:,0,:self.low_inst_size] = torch.mean(instruction_embedding, dim=1)
+            f_i_low[:, 0, : self.low_inst_size] = torch.mean(
+                instruction_embedding, dim=1
+            )
             f_i_high.fill_(0)
-            f_i_high[:,0,:self.high_inst_size] = torch.mean(sub_instruction_embedding, dim=1)
+            f_i_high[:, 0, : self.high_inst_size] = torch.mean(
+                sub_instruction_embedding, dim=1
+            )
         if self.model_config.ablate_fsa:
             # Absolutely mask sub-instructions
             sub_instruction_embedding = sub_instruction_embedding * 0
 
         f_i = torch.cat([f_i_high.squeeze(1), f_i_low.squeeze(1)], dim=1)
         f_i = self.inst_post(f_i)
-
 
         # Instruction to vision attention
         f_v_rgb, _ = self.spatial_attention_rgb(
@@ -497,7 +520,10 @@ class MLANet(Net):
         x = self.final_input_compress(all_features)
 
         # Decoder
-        (x, rnn_states_out[:, self.s2 :],) = self.action_decoder(
+        (
+            x,
+            rnn_states_out[:, self.s2 :],
+        ) = self.action_decoder(
             x,
             rnn_states[:, self.s2 :],
             masks,

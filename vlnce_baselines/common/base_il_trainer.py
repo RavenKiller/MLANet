@@ -23,6 +23,7 @@ from habitat_baselines.common.obs_transformers import (
     get_active_obs_transforms,
 )
 from habitat_baselines.common.tensorboard_utils import TensorboardWriter
+
 # from habitat_baselines.rl.ddppo.algo.ddp_utils import is_slurm_batch_job
 try:
     from habitat_baselines.rl.ddppo.ddp_utils import (
@@ -89,7 +90,14 @@ class BaseVLNCETrainer(BaseILTrainer):
         if load_from_ckpt:
             ckpt_path = config.IL.ckpt_to_load
             ckpt_dict = self.load_checkpoint(ckpt_path, map_location="cpu")
-            self.policy.load_state_dict({k.replace("actor_critic.",""):v for k,v in ckpt_dict["state_dict"].items() if k!="actor_critic.critic.fc.weight" and k!="actor_critic.critic.fc.bias"})
+            self.policy.load_state_dict(
+                {
+                    k.replace("actor_critic.", ""): v
+                    for k, v in ckpt_dict["state_dict"].items()
+                    if k != "actor_critic.critic.fc.weight"
+                    and k != "actor_critic.critic.fc.bias"
+                }
+            )
             if config.IL.is_requeue:
                 self.optimizer.load_state_dict(ckpt_dict["optim_state"])
                 self.start_epoch = ckpt_dict["epoch"] + 1
@@ -346,7 +354,7 @@ class BaseVLNCETrainer(BaseILTrainer):
         )
         start_time = time.time()
         if config.DEBUG:
-            os.makedirs("debug_%s"%(config.DEBUG_SUFFIX),exist_ok=True)
+            os.makedirs("debug_%s" % (config.DEBUG_SUFFIX), exist_ok=True)
             score_final = {}
             score_now = [[]] * config.NUM_ENVIRONMENTS
             action_final = {}
@@ -389,10 +397,12 @@ class BaseVLNCETrainer(BaseILTrainer):
                     if isinstance(
                         current_episodes[i].instruction.instruction_text, list
                     ):
-                        current_episodes[
-                            i
-                        ].instruction.instruction_text = " ".join(
-                            current_episodes[i].instruction.instruction_text
+                        current_episodes[i].instruction.instruction_text = (
+                            " ".join(
+                                current_episodes[
+                                    i
+                                ].instruction.instruction_text
+                            )
                         )
                     frame = append_text_to_image(
                         frame, current_episodes[i].instruction.instruction_text
@@ -431,8 +441,13 @@ class BaseVLNCETrainer(BaseILTrainer):
                         )
                         plt.savefig(
                             "debug_%s/ep%d_success%d_len%d.jpg"
-                            % (config.DEBUG_SUFFIX,int(ep_id), int(infos[i]["success"]), l),
-                            dpi=50
+                            % (
+                                config.DEBUG_SUFFIX,
+                                int(ep_id),
+                                int(infos[i]["success"]),
+                                l,
+                            ),
+                            dpi=50,
                         )
                     except BaseException:
                         pass

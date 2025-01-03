@@ -297,7 +297,7 @@ class DaggerTrainer(BaseVLNCETrainer):
             beta = p - 1.0
         else:
             # in Python 0.0 ** 0.0 == 1.0, but we want 0.0
-            beta = 0.0 if p == 0.0 else p ** data_it
+            beta = 0.0 if p == 0.0 else p**data_it
 
         ensure_unique_episodes = beta == 1.0
 
@@ -513,12 +513,14 @@ class DaggerTrainer(BaseVLNCETrainer):
         observation_space, action_space = self._get_spaces(self.config)
         if not os.path.exists("observation_space.pkl"):
             import pickle
+
             with open("observation_space.pkl", "wb") as f:
                 pickle.dump(observation_space, f)
             with open("action_space.pkl", "wb") as f:
                 pickle.dump(action_space, f)
         else:
             import pickle
+
             with open("observation_space.pkl", "rb") as f:
                 observation_space = pickle.load(f)
             with open("action_space.pkl", "rb") as f:

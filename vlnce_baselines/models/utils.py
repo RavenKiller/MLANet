@@ -68,7 +68,7 @@ class TruncatedNormal(nn.Module):
         https://en.wikipedia.org/wiki/Truncated_normal_distribution
         """
         standard_normal = Normal(0.0, 1.0)
-        standard_normal.pdf = lambda x: (np.e ** (-0.5 * (x ** 2))) / np.sqrt(
+        standard_normal.pdf = lambda x: (np.e ** (-0.5 * (x**2))) / np.sqrt(
             2 * np.pi
         )
         alpha = (self._smin - self._loc) / self._scale
@@ -87,7 +87,7 @@ class TruncatedNormal(nn.Module):
 
         t1 = (beta * beta_pdf - alpha * alpha_pdf) / standard_Z
         t2 = ((beta_pdf - alpha_pdf) / standard_Z) ** 2
-        self._variance = (self._scale ** 2) * (1 - t1 - t2)
+        self._variance = (self._scale**2) * (1 - t1 - t2)
 
         self._entropy = 0.5 * np.log(2 * np.pi * np.e)
         self._entropy += torch.log(self._scale * standard_Z)

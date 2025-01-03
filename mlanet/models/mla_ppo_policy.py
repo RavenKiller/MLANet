@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 import abc
 from pandas import isna
 from simplejson import OrderedDict
-from gym import Space,spaces
+from gym import Space, spaces
 import numpy as np
 
 import torch
@@ -22,6 +22,7 @@ from habitat_baselines.rl.models.rnn_state_encoder import (
     build_rnn_state_encoder,
 )
 from habitat_baselines.rl.models.simple_cnn import SimpleCNN
+
 # from habitat_baselines.utils.common import CategoricalNet, GaussianNet
 
 
@@ -69,25 +70,30 @@ class MLAPPOPolicy(Policy):
             ),
             action_space.n,
         )
+
     def extra_load_net(self, config):
-        if config.RL.load_net=="legacy":
-            ckpt = torch.load(config.RL.net_to_load,map_location="cpu")["state_dict"]
+        if config.RL.load_net == "legacy":
+            ckpt = torch.load(config.RL.net_to_load, map_location="cpu")[
+                "state_dict"
+            ]
             ckpt_new = self.net.state_dict()
-            for k,v in ckpt.items():
+            for k, v in ckpt.items():
                 if "net" in k:
                     k = k.replace("net.", "")
                     ckpt_new[k] = v
             self.net.load_state_dict(ckpt_new)
             ckpt_new = OrderedDict()
-            for k,v in ckpt.items():
+            for k, v in ckpt.items():
                 if "action_distribution" in k:
                     k = k.replace("action_distribution.", "")
                     ckpt_new[k] = v
             self.action_distribution.load_state_dict(ckpt_new)
-        elif config.RL.load_net=="ppo":
-            ckpt = torch.load(config.RL.net_to_load,map_location="cpu")["state_dict"]
+        elif config.RL.load_net == "ppo":
+            ckpt = torch.load(config.RL.net_to_load, map_location="cpu")[
+                "state_dict"
+            ]
             ckpt_new = self.state_dict()
-            for k,v in ckpt.items():
+            for k, v in ckpt.items():
                 k = k.replace("actor_critic.", "")
                 ckpt_new[k] = v
             self.load_state_dict(ckpt_new)
@@ -112,12 +118,18 @@ class MLAPPOPolicy(Policy):
         masks,
         deterministic=False,
     ):
-        return self.act(observations, rnn_hidden_states, prev_actions, masks, deterministic)
+        return self.act(
+            observations, rnn_hidden_states, prev_actions, masks, deterministic
+        )
 
 
 class MLANetLegacy(Net):
     def __init__(
-        self, observation_space: Space, model_config: Config, num_actions: int, config: Config
+        self,
+        observation_space: Space,
+        model_config: Config,
+        num_actions: int,
+        config: Config,
     ) -> None:
         super().__init__()
         self.model_config = model_config
@@ -326,21 +338,24 @@ class MLANetLegacy(Net):
         self.depth_features = None
         self.sub_features = None
 
-        self.feature_spaces = spaces.Dict({
-            "f_i":spaces.Box(
-                low=np.finfo(float).min,
-                high=np.finfo(float).max,
-                shape=(self.f_i_size,),
-                dtype=np.float32,
-            ),
-            "f_v":spaces.Box(
-                low=np.finfo(float).min,
-                high=np.finfo(float).max,
-                shape=(self.f_v_size,),
-                dtype=np.float32,
-            ),
-        })
+        self.feature_spaces = spaces.Dict(
+            {
+                "f_i": spaces.Box(
+                    low=np.finfo(float).min,
+                    high=np.finfo(float).max,
+                    shape=(self.f_i_size,),
+                    dtype=np.float32,
+                ),
+                "f_v": spaces.Box(
+                    low=np.finfo(float).min,
+                    high=np.finfo(float).max,
+                    shape=(self.f_v_size,),
+                    dtype=np.float32,
+                ),
+            }
+        )
         self.train()
+
     @property
     def hidden_size(self) -> int:
         return self._hidden_size
@@ -360,7 +375,6 @@ class MLANetLegacy(Net):
             + self.high_state_encoder.num_recurrent_layers
             + self.action_decoder.num_recurrent_layers
         )
-
 
     def _peak_loss_schedule(self):
         if self.step_cnt < self.peak_loss_steps:
@@ -383,7 +397,7 @@ class MLANetLegacy(Net):
             .repeat(score.shape)
         )
         x = torch.ones_like(score).cumsum(dim=1) - 1
-        x = -((x - mu) ** 2) / (2 * sigma ** 2)
+        x = -((x - mu) ** 2) / (2 * sigma**2)
         x = torch.exp(x)
         if mask is not None:
             x[mask] = 0
@@ -405,8 +419,9 @@ class MLANetLegacy(Net):
 
     def get_sub_features(self):
         return self.sub_features
+
     def get_state_features(self):
-        return {"f_i":self.f_i, "f_v":self.f_v}
+        return {"f_i": self.f_i, "f_v": self.f_v}
 
     def forward(
         self,
@@ -450,7 +465,7 @@ class MLANetLegacy(Net):
         if self.model_config.ablate_rgb:
             rgb_embedding = rgb_embedding * 0
             rgb_embedding_seq = rgb_embedding_seq * 0
-        
+
         # Ablation of SSA, the same as ablating sub-instructions
         if self.model_config.ablate_fsa:
             # Absolutely mask sub-instructions
@@ -478,12 +493,18 @@ class MLANetLegacy(Net):
 
         # Low and high level state encoders
         rnn_states_out = rnn_states.detach().clone()
-        (h_l, rnn_states_out[:, 0 : self.s1],) = self.low_state_encoder(
+        (
+            h_l,
+            rnn_states_out[:, 0 : self.s1],
+        ) = self.low_state_encoder(
             v_in,
             rnn_states[:, 0 : self.s1],
             masks,
         )
-        (h_h, rnn_states_out[:, self.s1 : self.s2],) = self.high_state_encoder(
+        (
+            h_h,
+            rnn_states_out[:, self.s1 : self.s2],
+        ) = self.high_state_encoder(
             v_in,
             rnn_states[:, self.s1 : self.s2],
             masks,
@@ -521,13 +542,16 @@ class MLANetLegacy(Net):
         # Ablation of MLA
         if self.model_config.ablate_mla:
             f_i_low.fill_(0)
-            f_i_low[:,0,:self.low_inst_size] = torch.mean(instruction_embedding, dim=1)
+            f_i_low[:, 0, : self.low_inst_size] = torch.mean(
+                instruction_embedding, dim=1
+            )
             f_i_high.fill_(0)
-            f_i_high[:,0,:self.high_inst_size] = torch.mean(sub_instruction_embedding, dim=1)
+            f_i_high[:, 0, : self.high_inst_size] = torch.mean(
+                sub_instruction_embedding, dim=1
+            )
 
         f_i = torch.cat([f_i_high.squeeze(1), f_i_low.squeeze(1)], dim=1)
         f_i = self.inst_post(f_i)
-
 
         # Instruction to vision attention
         f_v_rgb, _ = self.spatial_attention_rgb(
@@ -547,7 +571,10 @@ class MLANetLegacy(Net):
         x = self.final_input_compress(all_features)
 
         # Decoder
-        (x, rnn_states_out[:, self.s2 :],) = self.action_decoder(
+        (
+            x,
+            rnn_states_out[:, self.s2 :],
+        ) = self.action_decoder(
             x,
             rnn_states[:, self.s2 :],
             masks,
@@ -577,4 +604,3 @@ class MLANetLegacy(Net):
 
         self.step_cnt += 1
         return x, rnn_states_out
-

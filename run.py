@@ -10,6 +10,7 @@ from habitat import logger
 from habitat_baselines.common.baseline_registry import baseline_registry
 
 import habitat_extensions  # noqa: F401
+
 # import vlnce_baselines  # noqa: F401
 import mlanet
 from mlanet.config.default import get_config
@@ -63,7 +64,6 @@ def run_exp(exp_config: str, run_type: str, opts=None) -> None:
     torch.backends.cudnn.deterministic = False
     if torch.cuda.is_available():
         torch.set_num_threads(1)
-
 
     trainer_init = baseline_registry.get_trainer(config.TRAINER_NAME)
     assert trainer_init is not None, f"{config.TRAINER_NAME} is not supported"

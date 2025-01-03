@@ -23,6 +23,7 @@ from torch.optim.lr_scheduler import LambdaLR
 
 from habitat import Config, VectorEnv, logger
 from habitat.utils import profiling_wrapper
+
 # from habitat.utils.visualizations.utils import observations_to_image
 from habitat_extensions.utils import observations_to_image
 from habitat_baselines.common.base_trainer import BaseRLTrainer
@@ -36,6 +37,7 @@ from habitat_baselines.common.obs_transformers import (
 from habitat_baselines.common.rollout_storage import RolloutStorage
 from habitat_baselines.common.tensorboard_utils import TensorboardWriter
 from habitat_baselines.rl.ddppo.algo import DDPPO
+
 try:
     from habitat_baselines.rl.ddppo.ddp_utils import (
         EXIT,
@@ -65,6 +67,7 @@ except ModuleNotFoundError:
 #     PointNavResNetPolicy,
 # )
 from habitat_baselines.rl.ppo import PPO
+
 # from habitat_baselines.rl.ppo.policy import Policy
 from mlanet.models.mla_ppo_policy import MLAPPOPolicy
 from habitat_baselines.utils.common import (
@@ -74,6 +77,7 @@ from habitat_baselines.utils.common import (
     generate_video,
 )
 from vlnce_baselines.common.utils import extract_instruction_tokens
+
 # from habitat_baselines.utils.env_utils import construct_envs
 from vlnce_baselines.common.env_utils import construct_envs
 
@@ -81,12 +85,14 @@ import pickle
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 @baseline_registry.register_trainer(name="vlnceppov21")
 class VLNCEPPOTrainerv21(BaseRLTrainer):
     r"""Trainer class for PPO algorithm
     Paper: https://arxiv.org/abs/1707.06347.
     """
-    supported_tasks = ["Nav-v0","VLN-v0"]
+
+    supported_tasks = ["Nav-v0", "VLN-v0"]
 
     SHORT_ROLLOUT_THRESHOLD: float = 0.25
     _is_distributed: bool
@@ -213,7 +219,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
     def _init_envs(self, config=None):
         if config is None:
             config = self.config
-        
+
         self.envs = construct_envs(
             config,
             get_env_class(config.ENV_NAME),
@@ -221,8 +227,8 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
         )
 
     def _init_train(self):
-        resume_state = load_resume_state(self.config) # !! no resume
-        resume_state=None
+        resume_state = load_resume_state(self.config)  # !! no resume
+        resume_state = None
         if resume_state is not None:
             # self.config: Config = resume_state["config"] !!
             self.using_velocity_ctrl = (
@@ -348,7 +354,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
         observations = self.envs.reset()
         observations = extract_instruction_tokens(
-            observations, 
+            observations,
             self.config.TASK_CONFIG.TASK.INSTRUCTION_SENSOR_UUID,
             self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
         )
@@ -534,7 +540,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
         t_update_stats = time.time()
         observations = extract_instruction_tokens(
-            observations, 
+            observations,
             self.config.TASK_CONFIG.TASK.INSTRUCTION_SENSOR_UUID,
             self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
         )
@@ -695,10 +701,10 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             for k, v in deltas.items()
             if k not in {"reward", "count"}
         }
-        for k,v in metrics.items():
-            writer.add_scalar("metrics/"+k,v,self.num_steps_done)
-        for k,v in losses.items():
-            writer.add_scalar("losses/"+k,v,self.num_steps_done)
+        for k, v in metrics.items():
+            writer.add_scalar("metrics/" + k, v, self.num_steps_done)
+        for k, v in losses.items():
+            writer.add_scalar("losses/" + k, v, self.num_steps_done)
 
         # log stats
         if self.num_updates_done % self.config.LOG_INTERVAL == 0:
@@ -794,7 +800,8 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                     self.config.MODEL.policy_name
                     + "_"
                     + datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                ), flush_secs=self.flush_secs
+                ),
+                flush_secs=self.flush_secs,
             )
             if rank0_only()
             else contextlib.suppress()
@@ -913,6 +920,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
     def _score_hook(self, m, i, o):
         self.sub_score = o[1][:, 0, :].cpu()
+
     def _eval_checkpoint(
         self,
         checkpoint_path: str,
@@ -999,7 +1007,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
 
         observations = self.envs.reset()
         observations = extract_instruction_tokens(
-            observations, 
+            observations,
             self.config.TASK_CONFIG.TASK.INSTRUCTION_SENSOR_UUID,
             self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
         )
@@ -1030,9 +1038,9 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
             device=self.device,
             dtype=torch.bool,
         )
-        stats_episodes: Dict[
-            Any, Any
-        ] = {}  # dict of dicts that stores stats per episode
+        stats_episodes: Dict[Any, Any] = (
+            {}
+        )  # dict of dicts that stores stats per episode
 
         rgb_frames = [
             [] for _ in range(self.config.NUM_ENVIRONMENTS)
@@ -1056,7 +1064,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
         pbar = tqdm.tqdm(total=number_of_eval_episodes)
         self.actor_critic.eval()
         if config.DEBUG:
-            os.makedirs("debug_%s"%(config.DEBUG_SUFFIX),exist_ok=True)
+            os.makedirs("debug_%s" % (config.DEBUG_SUFFIX), exist_ok=True)
             score_final = {}
             score_now = [None] * config.NUM_ENVIRONMENTS
             action_final = {}
@@ -1106,7 +1114,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                 list(x) for x in zip(*outputs)
             ]
             observations = extract_instruction_tokens(
-                observations, 
+                observations,
                 self.config.TASK_CONFIG.TASK.INSTRUCTION_SENSOR_UUID,
                 self.config.TASK_CONFIG.TASK.SUB_INSTRUCTION_SENSOR_UUID,
             )
@@ -1180,16 +1188,25 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                         )
                         plt.savefig(
                             "debug_%s/ep%d_success%d_len%d.jpg"
-                            % (config.DEBUG_SUFFIX,int(ep_id), int(infos[i]["success"]), l),
-                            dpi=50
+                            % (
+                                config.DEBUG_SUFFIX,
+                                int(ep_id),
+                                int(infos[i]["success"]),
+                                l,
+                            ),
+                            dpi=50,
                         )
                         # except BaseException:
                         #     pass
                         plt.close()
-                        with open(f"action_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
+                        with open(
+                            f"action_{config.DEBUG_SUFFIX}.pkl", "wb"
+                        ) as f:
                             pickle.dump(action_final, f)
                         # if len(stats_episodes) % 100 == 0:
-                        with open(f"score_{config.DEBUG_SUFFIX}.pkl", "wb") as f:
+                        with open(
+                            f"score_{config.DEBUG_SUFFIX}.pkl", "wb"
+                        ) as f:
                             pickle.dump(score_final, f)
 
                     if len(self.config.VIDEO_OPTION) > 0:
@@ -1258,12 +1275,12 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
         if "extra_state" in ckpt_dict and "step" in ckpt_dict["extra_state"]:
             step_id = ckpt_dict["extra_state"]["step"]
 
-        for k,v in {"average reward": aggregated_stats["reward"]}.items():
-            writer.add_scalar(k,v,step_id)
+        for k, v in {"average reward": aggregated_stats["reward"]}.items():
+            writer.add_scalar(k, v, step_id)
 
         metrics = {k: v for k, v in aggregated_stats.items() if k != "reward"}
-        for k,v in metrics.items():
-            writer.add_scalar(k,v,step_id)
+        for k, v in metrics.items():
+            writer.add_scalar(k, v, step_id)
         if config.EVAL.SAVE_RESULTS:
             with open(fname, "w") as f:
                 json.dump(aggregated_stats, f, indent=4)
@@ -1308,12 +1325,11 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
         config.ENV_NAME = "VLNCEInferenceEnv"
         config.freeze()
 
-        
         self.envs = construct_envs(
             config,
             get_env_class(config.ENV_NAME),
             workers_ignore_signals=is_slurm_batch_job(),
-            auto_reset_done=False
+            auto_reset_done=False,
         )
 
         if self.using_velocity_ctrl:
@@ -1386,9 +1402,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                 ep_id = current_episodes[i].episode_id
                 k = current_episodes[i].instruction.instruction_id
                 instruction_ids[ep_id] = int(k)
-        logger.info(
-            f"Episodes Num: {envs.count_episodes()}"
-        )
+        logger.info(f"Episodes Num: {envs.count_episodes()}")
 
         with tqdm.tqdm(
             total=sum(envs.count_episodes()),
@@ -1464,7 +1478,9 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                                 images=rgb_frames[i],
                                 episode_id=current_episodes[i].episode_id,
                                 checkpoint_idx=0,
-                                metrics=self._extract_scalars_from_info(infos[i]),
+                                metrics=self._extract_scalars_from_info(
+                                    infos[i]
+                                ),
                                 tb_writer=writer,
                             )
 
@@ -1490,7 +1506,7 @@ class VLNCEPPOTrainerv21(BaseRLTrainer):
                     batch,
                     rgb_frames,
                 )
-        print(len(episode_predictions),sum(envs.count_episodes()))
+        print(len(episode_predictions), sum(envs.count_episodes()))
         envs.close()
         if config.INFERENCE.FORMAT == "r2r":
             with open(config.INFERENCE.PREDICTIONS_FILE, "w") as f:

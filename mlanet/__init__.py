@@ -1,5 +1,6 @@
 import habitat
-if habitat.__version__=="0.1.7":
+
+if habitat.__version__ == "0.1.7":
     from mlanet import (
         dagger_trainer,
         ppo_trainer_v17,

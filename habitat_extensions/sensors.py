@@ -204,14 +204,13 @@ class InstructionSensor(Sensor):
         self.observation_space = spaces.Box(
             low=0,
             high=65535,
-            shape=(
-                100,
-            ),
+            shape=(100,),
             dtype=np.int64,
         )
 
     def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
         return self.uuid
+
     def _get_observation_space(self, *args: Any, **kwargs: Any) -> spaces.Box:
         return self.observation_space
 
@@ -219,7 +218,7 @@ class InstructionSensor(Sensor):
         self,
         observations: Dict[str, Observations],
         episode: VLNEpisode,
-        **kwargs
+        **kwargs,
     ):
         return {
             "text": episode.instruction.instruction_text,
@@ -229,6 +228,7 @@ class InstructionSensor(Sensor):
 
     def get_observation(self, **kwargs):
         return self._get_observation(**kwargs)
+
 
 @registry.register_sensor(name="SubInstructionSensor")
 class SubInstructionSensor(Sensor):
@@ -243,8 +243,10 @@ class SubInstructionSensor(Sensor):
             ),
             dtype=np.int64,
         )
+
     def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
         return self.uuid
+
     def _get_observation_space(self, *args: Any, **kwargs: Any) -> spaces.Box:
         return self.observation_space
 
