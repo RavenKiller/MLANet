@@ -4,6 +4,7 @@ import random
 import warnings
 from collections import defaultdict
 from datetime import datetime
+import time
 
 import lmdb
 import msgpack_numpy
@@ -517,6 +518,7 @@ class DaggerTrainer(BaseVLNCETrainer):
             with open("action_space.pkl", "wb") as f:
                 pickle.dump(action_space, f)
         else:
+            import pickle
             with open("observation_space.pkl", "rb") as f:
                 observation_space = pickle.load(f)
             with open("action_space.pkl", "rb") as f:
@@ -542,9 +544,11 @@ class DaggerTrainer(BaseVLNCETrainer):
             for dagger_it in range(self.config.IL.DAGGER.iterations):
                 step_id = 0
                 if not self.config.IL.DAGGER.preload_lmdb_features:
+                    # tic = time.time()
                     self._update_dataset(
                         dagger_it + (1 if self.config.IL.load_from_ckpt else 0)
                     )
+                    # print("Time cost in Data Collection dagger{}: ".format(dagger_it), time.time()-tic)
 
                 if torch.cuda.is_available():
                     with torch.cuda.device(self.device):

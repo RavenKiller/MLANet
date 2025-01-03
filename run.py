@@ -55,9 +55,10 @@ def run_exp(exp_config: str, run_type: str, opts=None) -> None:
         os.makedirs(logdir, exist_ok=True)
     logger.add_filehandler(config.LOG_FILE)
 
-    random.seed(config.TASK_CONFIG.SEED)
-    np.random.seed(config.TASK_CONFIG.SEED)
-    torch.manual_seed(config.TASK_CONFIG.SEED)
+    seed = config.TASK_CONFIG.SEED
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = False
     if torch.cuda.is_available():

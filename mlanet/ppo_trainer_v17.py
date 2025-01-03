@@ -65,6 +65,8 @@ except ModuleNotFoundError:
 # from habitat_baselines.rl.ddppo.policy import (  # noqa: F401.
 #     PointNavResNetPolicy,
 # )
+from thop import profile
+
 from habitat_baselines.rl.ppo import PPO
 # from habitat_baselines.rl.ppo.policy import Policy
 from mlanet.models.mla_ppo_policy import MLAPPOPolicy
@@ -1044,7 +1046,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
             dtype=torch.bool,
         )
         stats_episodes: Dict[
-            Any, Any
+            Any
         ] = {}  # dict of dicts that stores stats per episode
 
         rgb_frames = [
@@ -1068,6 +1070,8 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
 
         pbar = tqdm.tqdm(total=number_of_eval_episodes)
         self.actor_critic.eval()
+        final_times = []
+        traj_times = 0
         while (
             len(stats_episodes) < number_of_eval_episodes
             and self.envs.num_envs > 0
@@ -1075,6 +1079,9 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
             current_episodes = self.envs.current_episodes()
 
             with torch.no_grad():
+                # flops, params = profile(self.actor_critic, inputs=(batch, test_recurrent_hidden_states,prev_actions,not_done_masks,False))
+                # print(flops, params)
+                tic = time.time()
                 (
                     _,
                     actions,
@@ -1087,6 +1094,8 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                     not_done_masks,
                     deterministic=False,
                 )
+                final_times.append(time.time()-tic)
+                traj_times += final_times[-1]
 
                 prev_actions.copy_(actions)  # type: ignore
             # NB: Move actions to CPU.  If CUDA tensors are
@@ -1132,10 +1141,7 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
             envs_to_pause = []
             n_envs = self.envs.num_envs
             for i in range(n_envs):
-                if (
-                    next_episodes[i].scene_id,
-                    next_episodes[i].episode_id,
-                ) in stats_episodes:
+                if next_episodes[i].episode_id in stats_episodes:
                     envs_to_pause.append(i)
 
                 # episode ended
@@ -1143,17 +1149,14 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                     pbar.update()
                     episode_stats = {}
                     episode_stats["reward"] = current_episode_reward[i].item()
+                    episode_stats["traj_time"] = traj_times
                     episode_stats.update(
                         self._extract_scalars_from_info(infos[i])
                     )
                     current_episode_reward[i] = 0
                     # use scene_id + episode_id as unique id for storing stats
-                    stats_episodes[
-                        (
-                            current_episodes[i].scene_id,
-                            current_episodes[i].episode_id,
-                        )
-                    ] = episode_stats
+                    stats_episodes[current_episodes[i].episode_id] = episode_stats
+                    traj_times = 0
 
                     if len(self.config.VIDEO_OPTION) > 0:
                         generate_video(
@@ -1195,7 +1198,10 @@ class VLNCEPPOTrainerv17(BaseRLTrainer):
                 batch,
                 rgb_frames,
             )
-
+        with open("{}_MLANet_times.json".format(config.EVAL.SPLIT), "w") as f:
+            json.dump(final_times, f)
+        with open("{}_MLANet_stats_episodes.json".format(config.EVAL.SPLIT), "w") as f:
+            json.dump(stats_episodes, f)
         num_episodes = len(stats_episodes)
         aggregated_stats = {}
         for stat_key in next(iter(stats_episodes.values())).keys():

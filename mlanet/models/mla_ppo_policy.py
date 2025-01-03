@@ -104,6 +104,15 @@ class MLAPPOPolicy(Policy):
         # p.extra_load_net(config)
         return p
 
+    def forward(
+        self,
+        observations,
+        rnn_hidden_states,
+        prev_actions,
+        masks,
+        deterministic=False,
+    ):
+        return self.act(observations, rnn_hidden_states, prev_actions, masks, deterministic)
 
 
 class MLANetLegacy(Net):

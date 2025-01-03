@@ -167,3 +167,15 @@ eval_*.sh
 tmp.sh
 *.svg
 slurm*.sh
+
+*val_seen.json
+*val_unseen.json
+*_times.json
+*_episodes.json
+
+/*.pdf
+/*.png
+/*.svg
+/*.jpg
+/*.zip
+/*.sh
