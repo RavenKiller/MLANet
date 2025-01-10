@@ -1,0 +1,57 @@
+BASE_TASK_CONFIG_PATH: habitat_extensions/config/vlnce_mla.yaml
+TRAINER_NAME: real_trainer # dagger, or recollect_trainer
+DEBUG: False
+SIMULATOR_GPU_ID: 0 # new version
+SIMULATOR_GPU_IDS: [0] # new version
+TORCH_GPU_ID: 0
+NUM_ENVIRONMENTS: 1
+TENSORBOARD_DIR: data/tensorboard_dirs/mla_real_scratch
+CHECKPOINT_FOLDER: data/checkpoints/mla_real_scratch
+EVAL_CKPT_PATH_DIR: data/checkpoints/mla_real_scratch
+RESULTS_DIR: data/checkpoints/mla_real_scratch/evals
+
+IL:
+  epochs: 45
+  batch_size: 2
+  lr: 2.5e-5
+  use_iw: True
+  inflection_weight_coef: 1.6
+  RECOLLECT_TRAINER:
+    gt_file:
+      data/datasets/R2R_VLNCE_NRSub/{split}/{split}_gt.json.gz
+  REAL:
+    train_num: 26
+    train_iter: 78
+    extra_step: 0
+    load_ckpt: False # True for sim_real, False for real scratch
+    ckpt_path: data/checkpoints/mla/mla_best_ppo.pth
+
+  DAGGER:
+    iterations: 1
+    update_size: 10819
+    p: 1.0
+    preload_lmdb_features: True
+    lmdb_features_dir: data/trajectories_dirs/mla_nrsub1/trajectories.lmdb
+
+MODEL:
+  policy_name: MLAPolicy
+
+  INSTRUCTION_ENCODER:
+    bidirectional: True
+  PROGRESS_MONITOR:
+    use: True
+    alpha: 1.0 # means theta in paper
+  PEAK_ATTENTION:
+    use: True
+    type: 1 # can be 0,1,2,3, the order of ascending
+    alpha: 0.4 # means lambda in paper
+    sigma: 0.6
+    steps: 2000
+    threshold: 0.6
+  MLA:
+    feature_drop: 0.1 # means FD in paper
+  CLIP:
+    rgb_level: -2
+  SEQ2SEQ:
+    encoder_prev_action: True
+    decoder_prev_action: True

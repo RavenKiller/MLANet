@@ -1,0 +1,71 @@
+BASE_TASK_CONFIG_PATH: habitat_extensions/config/vlnce_mla_v13.yaml
+TRAINER_NAME: vlnceppov21
+# SIMULATOR_GPU_IDS: [5]
+SIMULATOR_GPU_ID: 0 # new version
+TORCH_GPU_ID: 0
+NUM_ENVIRONMENTS: 8
+NUM_UPDATES: 100000
+NUM_CHECKPOINTS: 20
+# VIDEO_OPTION: ["disk"]
+# VIDEO_DIR: data/videos/debugtmp
+ENV_NAME: VLNCERLEnv
+TEST_EPISODE_COUNT: -1
+TENSORBOARD_DIR: data/tensorboard_dirs/mla_ppo
+CHECKPOINT_FOLDER: data/checkpoints/mla_ppo
+EVAL_CKPT_PATH_DIR: data/checkpoints/mla_ppo
+RESULTS_DIR: data/checkpoints/mla_ppo/evals
+
+EVAL:
+  USE_CKPT_CONFIG: False
+  SPLIT: val_unseen
+  EPISODE_COUNT: -1
+INFERENCE:
+  CKPT_PATH: data/checkpoints/mla_ppo/ckpt.5.pth
+  FORMAT: r2r
+
+RL:
+  SLACK_REWARD: -0.02
+  SUCCESS_REWARD: 8.0
+  MEASURE_RATIO: 1.0
+  REWARD_MEASURE: distance_to_goal
+  SUCCESS_MEASURE: success
+  load_net: "ppo" # "none", "legacy", "ppo"
+  net_to_load: data/checkpoints/mla/mla_best_ppo.pth # REPLACE
+
+  POLICY:
+    name: MLAPPOPolicy
+  PPO:
+    # ppo params
+    clip_param: 0.1
+    ppo_epoch: 1
+    num_mini_batch: 1
+    value_loss_coef: 0.5
+    entropy_coef: 0.01
+    lr: 2.5e-5
+    eps: 1e-5
+    max_grad_norm: 0.5
+    num_steps: 32
+    hidden_size: 512
+    use_gae: True
+    gamma: 0.99
+    tau: 0.95
+    use_linear_clip_decay: True
+    use_linear_lr_decay: True
+    reward_window_size: 50
+    
+  
+MODEL:
+  policy_name: MLAPPOPolicy
+
+  INSTRUCTION_ENCODER:
+    bidirectional: True
+  MLA:
+    feature_drop: 0.0
+  DEPTH_ENCODER:
+    trainable: False
+  CLIP:
+    rgb_level: -2
+    trainable: False
+  SEQ2SEQ:
+    encoder_prev_action: True
+    decoder_prev_action: True
