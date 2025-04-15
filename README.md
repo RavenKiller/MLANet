@@ -1,6 +1,11 @@
-# Multi-Level Attention Network with Sub-instruction for Continuous Vision-and-Language Navigation
-<!-- Official implrementations of *Multi-Level Attention with Sub-instruction for
-Continuous Vision-and-Language Navigation* ([paper]()) -->
+<div align="center">
+
+<h1>A Multilevel Attention Network with Sub-Instructions for Continuous Vision-and-Language Navigation</h1>
+
+<div>
+    <a href='https://ieeexplore.ieee.org/document/10802484' target='_blank'>[Paper (Applied Intelligence)]</a>
+</div>
+</div>
 
 
 ## Setup
@@ -119,7 +124,7 @@ Alkaid is a self-developed interactive service robot. Here are some parameters:
 + Speaker: 2 stereo units, 150Hz-20kHz output
 + Chassis: 2-wheel differential drive, 0.5m/s max speed, 1.2rad/s max angular speed
 
-The model is evaluated on collected VLNCE@TJ validation set. Demonstrations ([click](http://starzx.top:5555/vlncetj_alkaid.mp4) to watch the full video):
+The model is evaluated on collected VLNCE@TJ validation set ([13 examples](https://www.jianguoyun.com/p/DcB0_TwQlY_kBxivhrsFIAA), extraction code: `evop`). Demonstrations ([click](http://starzx.top:5555/vlncetj_alkaid.mp4) to watch the full video):
 
 [![Watch the video](https://github.com/RavenKiller/MLANet/assets/41775391/9109d985-b349-4cc2-acc7-251c121f5660)](http://starzx.top:5555/vlncetj_alkaid.mp4)
 
@@ -128,4 +133,20 @@ The model is evaluated on collected VLNCE@TJ validation set. Demonstrations ([cl
 ## Checkpoints
 <!-- \[[val](https://www.jianguoyun.com/p/DSOE7KcQhY--CRjUtMMEIAA )\] \[[test](https://www.jianguoyun.com/p/DSYqcBcQhY--CRiAkbkEIAA)\] -->
 \[[best model](https://www.jianguoyun.com/p/DSAuJqsQhY--CRjYrOwEIAA)\]
+
+## Citation
+```
+@article{he2025multilevel,
+  title = {A Multilevel Attention Network with Sub-Instructions for Continuous Vision-and-Language Navigation},
+  author = {He, Zongtao and Wang, Liuyi and Li, Shu and Yan, Qingqing and Liu, Chengju and Chen, Qijun},
+  year = {2025},
+  month = apr,
+  journal = {Applied Intelligence},
+  volume = {55},
+  number = {7},
+  pages = {657},
+  issn = {1573-7497},
+  doi = {10.1007/s10489-025-06544-9}
+}
+```
 
