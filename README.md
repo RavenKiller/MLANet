@@ -3,7 +3,7 @@
 <h1>A Multilevel Attention Network with Sub-Instructions for Continuous Vision-and-Language Navigation</h1>
 
 <div>
-    <a href=https://link.springer.com/article/10.1007/s10489-025-06544-9' target='_blank'>[Paper (Applied Intelligence)]</a>
+    <a href='https://link.springer.com/article/10.1007/s10489-025-06544-9' target='_blank'>[Paper (Applied Intelligence)]</a>
 </div>
 </div>
 
